@@ -15,3 +15,4 @@ RUN mkdir -p instance/uploads
 EXPOSE 5000
 
 
+CMD ["sh", "-c", "gunicorn run:app --bind 0.0.0.0:${PORT:-5000}"]
