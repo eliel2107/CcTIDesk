@@ -5,3 +5,4 @@ instance/
 *.db
 .env
 instance/
+.DEPLOY.md
