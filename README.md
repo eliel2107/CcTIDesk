@@ -148,6 +148,91 @@ tests/
 ```
 
 ---
+# 🎫 Gerenciador de Chamados, Compras e Envios de TI
+
+Sistema web completo para gestão operacional de chamados de suporte, compras e envios de equipamentos de TI — desenvolvido em **Python · Flask · SQLite**.
+
+> **Stack:** Python 3.11+ · Flask 3 · SQLite · Jinja2 · Chart.js · HTML/CSS puro (sem framework)
+
+---
+
+# 🎬 Demonstração do Sistema
+
+## Login
+![Login](img/Menu_Login.png)
+
+## Tela inicial
+![Inicio](img/Inicio.png)
+
+---
+
+# 📊 Dashboard
+
+![Dashboard](img/Dashboard.png)
+
+![Dashboard Ativos](img/Dash_Ativos.png)
+
+---
+
+# 🎫 Gestão de Chamados
+
+## Fila operacional
+![Fila Chamados](img/Fila_Chamados.png)
+
+## Lista de chamados
+![Lista Chamados](img/Lista_Cards_Chamados.png)
+
+## Tratamento do chamado
+![Tratamento Chamado](img/Tratamento_Chamado.png)
+
+## Abertura de chamado
+![Abertura Chamado](img/Abertura_Chamado.png)
+
+---
+
+# 🧩 Kanban de Chamados
+
+![Kanban](img/Kanban.gif)
+
+---
+
+# 🔎 Busca Geral
+
+![Busca Geral](img/BuscaGeral.gif)
+
+---
+
+# 👥 Gestão de Usuários
+
+![Usuarios](img/Usuarios.png)
+
+![Gerenciamento Usuarios](img/Ger_User.gif)
+
+---
+
+# 💻 Gestão de Ativos
+
+## Cadastro de ativo
+![Cadastro Ativo](img/Ativo_cadastro.png)
+
+## Demonstração de ativos
+![Ativo Demo](img/AtivoDemo.gif)
+
+---
+
+# 🔌 API
+
+![API Status](img/API_Status.gif)
+
+---
+
+## ✨ Funcionalidades principais
+
+
+
+
+
+
 
 ## 🛠️ Tecnologias
 
