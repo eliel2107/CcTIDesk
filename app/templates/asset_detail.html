@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="eyebrow">Ativo</div>
+      <h1>#{{ asset.id }} • {{ asset.tag }}</h1>
+      <div class="muted">Criado em {{ asset.criado_em }} • Atualizado em {{ asset.atualizado_em }}</div>
+    </div>
+    <div class="badges">
+      <span class="pill">{{ asset.tipo }}</span>
+      <span class="pill">{{ asset.status }}</span>
+      {% if g.user["role"] in ["admin", "operador"] %}
+      <a class="btn secondary" href="{{ url_for('assets_admin.edit_asset', asset_id=asset.id) }}">Editar</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="layout-premium">
+  <div class="main-pane">
+    <section class="card">
+      <h2>Resumo do ativo</h2>
+      <div class="summary-grid">
+        <div class="summary-box"><span>Modelo</span><strong>{{ asset.modelo }}</strong></div>
+        <div class="summary-box"><span>Serial</span><strong>{{ asset.serial_number or "-" }}</strong></div>
+        <div class="summary-box"><span>Base / Local</span><strong>{{ asset.local_base or "-" }}</strong></div>
+        <div class="summary-box"><span>Responsável</span><strong>{{ asset.responsavel or "-" }}</strong></div>
+      </div>
+      <h3>Observações</h3>
+      <p style="white-space: pre-wrap;">{{ asset.observacoes or "-" }}</p>
+    </section>
+
+    <section class="card">
+      <h2>Chamados vinculados</h2>
+      <ul class="files">
+        {% for t in tickets %}
+          <li><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">#{{ t.id }} • {{ t.titulo }}</a> <span class="muted">({{ t.status }} • {{ t.prioridade }})</span></li>
+        {% endfor %}
+        {% if tickets|length == 0 %}<li class="muted">Nenhum chamado vinculado.</li>{% endif %}
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Histórico do ativo</h2>
+      <ul class="timeline">
+        {% for h in history %}
+          <li>
+            <div class="time">{{ h.criado_em }}</div>
+            <div class="event"><strong>{{ h.evento }}</strong><div class="muted">{{ h.detalhe }}</div></div>
+          </li>
+        {% endfor %}
+        {% if history|length == 0 %}
+          <li><div class="event"><span class="muted">Nenhum histórico.</span></div></li>
+        {% endif %}
+      </ul>
+    </section>
+  </div>
+
+  <aside class="side-pane">
+    <section class="card sticky-card">
+      <h2>QR rápido</h2>
+      <div class="muted">Cole este QR no equipamento para abrir o cadastro rapidamente.</div>
+      <div class="qr-box">
+        <img alt="QR do ativo" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ url_for('assets_admin.asset_detail', asset_id=asset.id, _external=True) | urlencode }}">
+      </div>
+      <div class="muted"><code>{{ url_for('assets_admin.asset_detail', asset_id=asset.id, _external=True) }}</code></div>
+    </section>
+  </aside>
+</section>
+{% endblock %}

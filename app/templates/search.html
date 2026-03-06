@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Busca global</h1>
+  <form method="get" class="form">
+    <div class="grid">
+      <label class="span-2">Buscar por tag, serial, ticket, responsável, rastreio...
+        <input name="q" value="{{ q }}" placeholder="Ex: NB-001 / SN123 / Eliel / BR123">
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Buscar</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Ativos</h2>
+  <div class="ticket-grid">
+    {% if assets|length == 0 %}
+      <div class="muted">Nenhum ativo encontrado.</div>
+    {% endif %}
+    {% for a in assets %}
+      <div class="ticket-card">
+        <div class="ticket-header">
+          <div class="ticket-id">#{{ a.id }} • {{ a.tag }}</div>
+          <span class="pill">{{ a.status }}</span>
+        </div>
+        <h3 class="ticket-title"><a href="{{ url_for('assets_admin.asset_detail', asset_id=a.id) }}">{{ a.modelo }}</a></h3>
+        <div class="ticket-info">
+          <div>🏷 {{ a.serial_number or "-" }}</div>
+          <div class="muted">📍 {{ a.local_base or "-" }}</div>
+          <div class="muted">👤 {{ a.responsavel or "-" }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <h2>Chamados</h2>
+  <div class="ticket-grid">
+    {% if tickets|length == 0 %}
+      <div class="muted">Nenhum chamado encontrado.</div>
+    {% endif %}
+    {% for t in tickets %}
+      <div class="ticket-card">
+        <div class="ticket-header">
+          <div class="ticket-id">#{{ t.id }}</div>
+          <div class="ticket-meta">
+            <span class="pill">{{ t.tipo }}</span>
+            <span class="pill">{{ t.status }}</span>
+          </div>
+        </div>
+        <h3 class="ticket-title"><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.titulo }}</a></h3>
+        <div class="ticket-info">
+          <div>👤 <strong>{{ t.responsavel or "-" }}</strong></div>
+          <div class="muted">⚠ {{ t.prioridade }}</div>
+          <div class="muted">Atualizado: {{ t.atualizado_em }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

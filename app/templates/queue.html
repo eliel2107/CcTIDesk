@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Fila de chamados</h1>
+  <div class="muted">Chamados abertos pelos solicitantes aguardando triagem e tratamento.
+    <span class="queue-legend"><span class="legend-dot unassigned-dot"></span> Sem responsável — disponível para assumir</span>
+  </div>
+
+  <form method="get" class="filters">
+    <div class="grid">
+      <label>Status
+        <select name="status">
+          <option value="">(todos)</option>
+          {% for s in STATUSES %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Tipo
+        <select name="tipo">
+          <option value="">(todos)</option>
+          {% for t in TYPES %}<option value="{{ t }}" {% if filters.tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Buscar
+        <input name="q" value="{{ filters.q }}" placeholder="título / solicitante">
+      </label>
+      <label><input type="checkbox" name="only_unassigned" value="1" {% if filters.only_unassigned == '1' %}checked{% endif %}> Somente sem responsável</label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Filtrar</button>
+      <a class="btn secondary" href="{{ url_for('routes.queue') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Título</th>
+          <th>Tipo</th>
+          <th>Solicitante</th>
+          <th>Prioridade</th>
+          <th>Status</th>
+          <th>Responsável</th>
+          <th>Criado em</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if tickets|length == 0 %}
+          <tr><td colspan="9" class="muted">Nenhum chamado na fila.</td></tr>
+        {% endif %}
+        {% for t in tickets %}
+          <tr class="{% if not t.assigned_user_id %}queue-row-unassigned{% endif %}">
+            <td><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">#{{ t.id }}</a></td>
+            <td>
+              {{ t.titulo }}
+              {% if not t.assigned_user_id %}
+                <span class="badge-unassigned">Novo</span>
+              {% endif %}
+            </td>
+            <td><span class="pill">{{ t.tipo }}</span></td>
+            <td>{{ t.requester_name or t.solicitante or "-" }}</td>
+            <td><span class="pill">{{ t.prioridade }}</span></td>
+            <td><span class="pill">{{ t.status }}</span></td>
+            <td>
+              {% if not t.assigned_user_id %}
+                <span class="unassigned-label">— Sem responsável —</span>
+              {% else %}
+                {{ t.assigned_name or t.responsavel }}
+              {% endif %}
+            </td>
+            <td>{{ t.criado_em }}</td>
+            <td>
+              {% if not t.assigned_user_id %}
+                <form method="post" action="{{ url_for('routes.take_ticket', ticket_id=t.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-assume" type="submit">⚡ Assumir</button>
+                </form>
+              {% else %}
+                <span class="muted">Em tratamento</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

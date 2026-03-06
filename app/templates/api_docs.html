@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="eyebrow">Referência técnica</div>
+      <h1>API REST</h1>
+      <div class="muted">Base URL: <code>/api</code> &nbsp;•&nbsp; Formato: <code>application/json</code> &nbsp;•&nbsp; Rate limit: veja cada endpoint</div>
+    </div>
+    <div>
+      <span class="pill" style="background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:#34d399;">● Live</span>
+    </div>
+  </div>
+</section>
+
+{# ── Índice rápido ── #}
+<section class="card api-index">
+  <h2>Endpoints</h2>
+  <div class="api-index-grid">
+    <a href="#health"   class="api-index-item"><span class="badge-get">GET</span> /api/health</a>
+    <a href="#tickets-list"  class="api-index-item"><span class="badge-get">GET</span> /api/tickets</a>
+    <a href="#tickets-get"   class="api-index-item"><span class="badge-get">GET</span> /api/tickets/{id}</a>
+    <a href="#tickets-status" class="api-index-item"><span class="badge-post">POST</span> /api/tickets/{id}/status</a>
+    <a href="#assets-list"   class="api-index-item"><span class="badge-get">GET</span> /api/assets</a>
+    <a href="#assets-get"    class="api-index-item"><span class="badge-get">GET</span> /api/assets/{id}</a>
+  </div>
+</section>
+
+{# ═══════════════════════════════ HEALTH ═══════════════════════════════ #}
+<section class="card api-section" id="health">
+  <div class="api-header">
+    <span class="badge-get">GET</span>
+    <code class="api-path">/api/health</code>
+    <span class="api-desc">Verifica se a API está operacional</span>
+    <span class="rate-badge">sem limite</span>
+  </div>
+
+  <div class="api-body">
+    <div class="api-col">
+      <h3>Parâmetros</h3>
+      <div class="muted">Nenhum.</div>
+    </div>
+    <div class="api-col">
+      <h3>Resposta <span class="status-ok">200 OK</span></h3>
+      <pre><code id="ex-health">{
+  "ok": true,
+  "service": "chamados"
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="api-try">
+    <button class="btn ghost" onclick="tryApi('GET','/api/health',null,'res-health')">▶ Testar agora</button>
+    <pre class="api-result" id="res-health"></pre>
+  </div>
+</section>
+
+{# ═══════════════════════════════ TICKETS LIST ═══════════════════════════════ #}
+<section class="card api-section" id="tickets-list">
+  <div class="api-header">
+    <span class="badge-get">GET</span>
+    <code class="api-path">/api/tickets</code>
+    <span class="api-desc">Lista chamados com filtros opcionais</span>
+    <span class="rate-badge">200 req/h</span>
+  </div>
+
+  <div class="api-body">
+    <div class="api-col">
+      <h3>Query params</h3>
+      <table class="params-table">
+        <thead><tr><th>Param</th><th>Tipo</th><th>Valores aceitos</th></tr></thead>
+        <tbody>
+          <tr><td><code>status</code></td><td>string</td><td>ABERTO, EM_ANDAMENTO, AGUARDANDO_FORNECEDOR, AGUARDANDO_APROVACAO, ENVIADO, CONCLUIDO, CANCELADO</td></tr>
+          <tr><td><code>tipo</code></td><td>string</td><td>COMPRA, ENVIO</td></tr>
+          <tr><td><code>prioridade</code></td><td>string</td><td>BAIXA, MEDIA, ALTA, URGENTE</td></tr>
+          <tr><td><code>responsavel</code></td><td>string</td><td>busca parcial (LIKE)</td></tr>
+          <tr><td><code>q</code></td><td>string</td><td>busca livre em título, solicitante, rastreio</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="api-col">
+      <h3>Resposta <span class="status-ok">200 OK</span></h3>
+      <pre><code>{
+  "count": 2,
+  "items": [
+    {
+      "id": 1,
+      "tipo": "COMPRA",
+      "titulo": "Notebook Dell",
+      "solicitante": "Ana Silva",
+      "responsavel": "João Costa",
+      "prioridade": "ALTA",
+      "status": "EM_ANDAMENTO",
+      "data_limite": "2026-03-20",
+      "atualizado_em": "2026-03-06 14:30:00"
+    }
+  ]
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="api-try">
+    <div class="try-row">
+      <label>status <input id="p-status" placeholder="ex: ABERTO" class="try-input"></label>
+      <label>tipo <input id="p-tipo" placeholder="COMPRA ou ENVIO" class="try-input"></label>
+      <label>q <input id="p-q" placeholder="busca livre" class="try-input"></label>
+      <button class="btn ghost" onclick="tryTicketsList()">▶ Testar</button>
+    </div>
+    <pre class="api-result" id="res-tickets-list"></pre>
+  </div>
+</section>
+
+{# ═══════════════════════════════ TICKETS GET ═══════════════════════════════ #}
+<section class="card api-section" id="tickets-get">
+  <div class="api-header">
+    <span class="badge-get">GET</span>
+    <code class="api-path">/api/tickets/{id}</code>
+    <span class="api-desc">Retorna um chamado pelo ID</span>
+    <span class="rate-badge">300 req/h</span>
+  </div>
+
+  <div class="api-body">
+    <div class="api-col">
+      <h3>Path param</h3>
+      <table class="params-table">
+        <thead><tr><th>Param</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>integer</td><td>ID do chamado</td></tr>
+        </tbody>
+      </table>
+      <h3 style="margin-top:14px;">Códigos de resposta</h3>
+      <table class="params-table">
+        <tbody>
+          <tr><td><span class="status-ok">200</span></td><td>Chamado encontrado</td></tr>
+          <tr><td><span class="status-err">404</span></td><td>Chamado não encontrado</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="api-col">
+      <h3>Resposta <span class="status-ok">200 OK</span></h3>
+      <pre><code>{
+  "id": 1,
+  "tipo": "COMPRA",
+  "titulo": "Notebook Dell",
+  "descricao": "Compra de notebook...",
+  "solicitante": "Ana Silva",
+  "responsavel": "João Costa",
+  "prioridade": "ALTA",
+  "status": "EM_ANDAMENTO",
+  "fornecedor": "Dell Brasil",
+  "valor_estimado": 4500.00,
+  "data_limite": "2026-03-20",
+  "criado_em": "2026-03-01 09:00:00",
+  "atualizado_em": "2026-03-06 14:30:00"
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="api-try">
+    <div class="try-row">
+      <label>ID do chamado <input id="p-ticket-id" placeholder="ex: 1" class="try-input" style="width:100px;"></label>
+      <button class="btn ghost" onclick="tryTicketGet()">▶ Testar</button>
+    </div>
+    <pre class="api-result" id="res-ticket-get"></pre>
+  </div>
+</section>
+
+{# ═══════════════════════════════ TICKETS STATUS ═══════════════════════════════ #}
+<section class="card api-section" id="tickets-status">
+  <div class="api-header">
+    <span class="badge-post">POST</span>
+    <code class="api-path">/api/tickets/{id}/status</code>
+    <span class="api-desc">Atualiza o status de um chamado</span>
+    <span class="rate-badge">120 req/h</span>
+  </div>
+
+  <div class="api-body">
+    <div class="api-col">
+      <h3>Body <code>application/json</code></h3>
+      <table class="params-table">
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>status</code></td><td>string</td><td>✅</td><td>Novo status do chamado</td></tr>
+        </tbody>
+      </table>
+      <h3 style="margin-top:14px;">Valores de status</h3>
+      <div class="status-pills">
+        {% for s in ["ABERTO","EM_ANDAMENTO","AGUARDANDO_FORNECEDOR","AGUARDANDO_APROVACAO","ENVIADO","CONCLUIDO","CANCELADO"] %}
+          <span class="pill">{{ s }}</span>
+        {% endfor %}
+      </div>
+      <h3 style="margin-top:14px;">Códigos de resposta</h3>
+      <table class="params-table">
+        <tbody>
+          <tr><td><span class="status-ok">200</span></td><td>Status atualizado</td></tr>
+          <tr><td><span class="status-err">400</span></td><td>Status inválido</td></tr>
+          <tr><td><span class="status-err">404</span></td><td>Chamado não encontrado</td></tr>
+          <tr><td><span class="status-err">429</span></td><td>Rate limit atingido</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="api-col">
+      <h3>Exemplo de requisição</h3>
+      <pre><code>POST /api/tickets/1/status
+Content-Type: application/json
+
+{
+  "status": "EM_ANDAMENTO"
+}</code></pre>
+      <h3>Resposta <span class="status-ok">200 OK</span></h3>
+      <pre><code>{
+  "ok": true,
+  "id": 1,
+  "status": "EM_ANDAMENTO"
+}</code></pre>
+      <h3>Resposta <span class="status-err">400 Bad Request</span></h3>
+      <pre><code>{
+  "error": "Status inválido: 'INVALIDO'."
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="api-try">
+    <div class="try-row">
+      <label>ID <input id="p-status-id" placeholder="ex: 1" class="try-input" style="width:80px;"></label>
+      <label>Novo status
+        <select id="p-new-status" class="try-input">
+          {% for s in ["ABERTO","EM_ANDAMENTO","AGUARDANDO_FORNECEDOR","AGUARDANDO_APROVACAO","ENVIADO","CONCLUIDO","CANCELADO"] %}
+            <option>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn ghost" onclick="tryStatusUpdate()">▶ Testar</button>
+    </div>
+    <pre class="api-result" id="res-status"></pre>
+  </div>
+</section>
+
+{# ═══════════════════════════════ ASSETS LIST ═══════════════════════════════ #}
+<section class="card api-section" id="assets-list">
+  <div class="api-header">
+    <span class="badge-get">GET</span>
+    <code class="api-path">/api/assets</code>
+    <span class="api-desc">Lista ativos de TI com filtros opcionais</span>
+    <span class="rate-badge">300 req/h</span>
+  </div>
+
+  <div class="api-body">
+    <div class="api-col">
+      <h3>Query params</h3>
+      <table class="params-table">
+        <thead><tr><th>Param</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>q</code></td><td>string</td><td>Busca livre (tag, modelo, serial)</td></tr>
+          <tr><td><code>status</code></td><td>string</td><td>Status do ativo</td></tr>
+          <tr><td><code>tipo</code></td><td>string</td><td>Tipo do equipamento</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="api-col">
+      <h3>Resposta <span class="status-ok">200 OK</span></h3>
+      <pre><code>{
+  "count": 1,
+  "items": [
+    {
+      "id": 1,
+      "tag": "NB-001",
+      "tipo": "NOTEBOOK",
+      "modelo": "Dell Latitude 5530",
+      "serial_number": "ABC123",
+      "local_base": "São Paulo",
+      "responsavel": "Ana Silva",
+      "status": "EM_USO"
+    }
+  ]
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="api-try">
+    <div class="try-row">
+      <label>q <input id="p-asset-q" placeholder="busca livre" class="try-input"></label>
+      <button class="btn ghost" onclick="tryAssetsList()">▶ Testar</button>
+    </div>
+    <pre class="api-result" id="res-assets-list"></pre>
+  </div>
+</section>
+
+{# ═══════════════════════════════ ASSETS GET ═══════════════════════════════ #}
+<section class="card api-section" id="assets-get">
+  <div class="api-header">
+    <span class="badge-get">GET</span>
+    <code class="api-path">/api/assets/{id}</code>
+    <span class="api-desc">Retorna um ativo pelo ID</span>
+    <span class="rate-badge">300 req/h</span>
+  </div>
+
+  <div class="api-body">
+    <div class="api-col">
+      <h3>Path param</h3>
+      <table class="params-table">
+        <thead><tr><th>Param</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>integer</td><td>ID do ativo</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="api-col">
+      <h3>Resposta <span class="status-ok">200 OK</span></h3>
+      <pre><code>{
+  "id": 1,
+  "tag": "NB-001",
+  "tipo": "NOTEBOOK",
+  "modelo": "Dell Latitude 5530",
+  "serial_number": "ABC123",
+  "local_base": "São Paulo",
+  "responsavel": "Ana Silva",
+  "status": "EM_USO",
+  "observacoes": "",
+  "criado_em": "2026-01-10 08:00:00",
+  "atualizado_em": "2026-03-06 12:00:00"
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="api-try">
+    <div class="try-row">
+      <label>ID do ativo <input id="p-asset-id" placeholder="ex: 1" class="try-input" style="width:100px;"></label>
+      <button class="btn ghost" onclick="tryAssetGet()">▶ Testar</button>
+    </div>
+    <pre class="api-result" id="res-asset-get"></pre>
+  </div>
+</section>
+
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+async function tryApi(method, url, body, resultId) {
+  const el = document.getElementById(resultId);
+  el.textContent = "Carregando...";
+  el.className = "api-result loading";
+  try {
+    const opts = {
+      method,
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    const data = await r.json();
+    el.textContent = JSON.stringify(data, null, 2);
+    el.className = "api-result " + (r.ok ? "ok" : "err");
+  } catch(e) {
+    el.textContent = "Erro: " + e.message;
+    el.className = "api-result err";
+  }
+}
+
+function tryTicketsList() {
+  const status = document.getElementById("p-status").value;
+  const tipo   = document.getElementById("p-tipo").value;
+  const q      = document.getElementById("p-q").value;
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (tipo)   params.set("tipo", tipo);
+  if (q)      params.set("q", q);
+  tryApi("GET", `/api/tickets?${params}`, null, "res-tickets-list");
+}
+
+function tryTicketGet() {
+  const id = document.getElementById("p-ticket-id").value || "1";
+  tryApi("GET", `/api/tickets/${id}`, null, "res-ticket-get");
+}
+
+function tryStatusUpdate() {
+  const id = document.getElementById("p-status-id").value || "1";
+  const status = document.getElementById("p-new-status").value;
+  tryApi("POST", `/api/tickets/${id}/status`, { status }, "res-status");
+}
+
+function tryAssetsList() {
+  const q = document.getElementById("p-asset-q").value;
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  tryApi("GET", `/api/assets?${params}`, null, "res-assets-list");
+}
+
+function tryAssetGet() {
+  const id = document.getElementById("p-asset-id").value || "1";
+  tryApi("GET", `/api/assets/${id}`, null, "res-asset-get");
+}
+</script>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Novo chamado</h1>
+
+  <form method="post" action="{{ url_for('routes.create_ticket_route') }}" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <label>Tipo
+        <select name="tipo" required>
+          {% for t in TYPES %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+      </label>
+
+      <label>Prioridade
+        <select name="prioridade" required>
+          {% for p in PRIORITIES %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+        </select>
+      </label>
+
+      <label class="span-2">Título
+        <input name="titulo" required placeholder="ex: Compra de headset / Envio de notebook" />
+      </label>
+
+      <label>Solicitante <input name="solicitante" placeholder="ex: TI / Patrimônio / Nome" /></label>
+      <label>Responsável <input name="responsavel" placeholder="ex: Eliel / Iago" /></label>
+
+      <label>Fornecedor <input name="fornecedor" placeholder="ex: Kabum / Amazon / Fornecedor X" /></label>
+      <label>Centro de custo <input name="centro_custo" placeholder="ex: TI-001" /></label>
+
+      <label>Valor estimado (R$) <input name="valor_estimado" placeholder="ex: 249,90" /></label>
+      <label>Código de rastreio <input name="codigo_rastreio" placeholder="ex: BR123..." /></label>
+
+      <label class="span-2">Link do pedido <input name="link_pedido" placeholder="ex: link interno / pedido / cotação" /></label>
+
+      <label>Data limite (YYYY-MM-DD) <input name="data_limite" placeholder="ex: 2026-03-15" /></label>
+      <label>Ativo vinculado
+        <select name="asset_id">
+          <option value="">(nenhum)</option>
+          {% for a in assets %}<option value="{{ a.id }}">#{{ a.id }} • {{ a.tag }} • {{ a.modelo }}</option>{% endfor %}
+        </select>
+      </label>
+
+      <label class="span-2">Descrição
+        <textarea name="descricao" rows="4" placeholder="Detalhe: item, quantidade, endereço, justificativa..."></textarea>
+      </label>
+
+      <div class="span-2 divider">Dados de entrega (útil para ENVIO)</div>
+<div class="span-2">
+  <label>Preencher endereço por base/local (opcional)
+    <select id="presetSelect">
+      <option value="">(selecionar)</option>
+    </select>
+  </label>
+  <div class="muted" id="presetObs" style="margin-top:6px"></div>
+  <div class="muted" id="senderBox" style="margin-top:8px"></div>
+</div>
+
+<script>
+  async function loadAddressBook() {
+    try {
+      const res = await fetch("/api/address-book");
+      const data = await res.json();
+      const delivery = data.delivery || {};
+      const sender = data.sender || {};
+      const select = document.getElementById("presetSelect");
+      const obs = document.getElementById("presetObs");
+      const senderBox = document.getElementById("senderBox");
+
+      const senderDefaultKey = sender["ENGIE SOM (RJ)"] ? "ENGIE SOM (RJ)" : (Object.keys(sender)[0] || "");
+      function renderSender(key){
+        if(!key || !sender[key]){ senderBox.innerHTML = ""; return; }
+        const s = sender[key];
+        senderBox.innerHTML = "<strong>Remetente sugerido:</strong><br>"
+          + (s.nome||"") + "<br>" + (s.endereco||"").replaceAll("\n","<br>")
+          + "<br>" + (s.cep||"") + " • " + (s.cidade||"") + " - " + (s.estado||"");
+      }
+
+      Object.keys(delivery).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(k => {
+        const opt = document.createElement("option");
+        opt.value = k;
+        opt.textContent = k;
+        select.appendChild(opt);
+      });
+
+      renderSender(senderDefaultKey);
+
+      select.addEventListener("change", () => {
+        const k = select.value;
+        if(!k) { obs.textContent = ""; renderSender(senderDefaultKey); return; }
+        const p = delivery[k];
+        const set = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if(el) el.value = val || ""; };
+        set("destinatario", p.destinatario);
+        set("telefone", p.telefone);
+        set("endereco", p.endereco);
+        set("cidade", p.cidade);
+        set("estado", p.estado);
+        set("cep", p.cep);
+        obs.textContent = p.observacoes ? ("Obs: " + p.observacoes) : "";
+        renderSender(senderDefaultKey);
+      });
+    } catch (e) {}
+  }
+  loadAddressBook();
+</script>
+
+
+      <label>Destinatário <input name="destinatario" placeholder="Nome de quem vai receber" /></label>
+      <label>Telefone <input name="telefone" placeholder="(xx) xxxxx-xxxx" /></label>
+
+      <label class="span-2">Endereço <input name="endereco" placeholder="Rua, número, complemento, bairro" /></label>
+
+      <label>Cidade <input name="cidade" placeholder="Cidade" /></label>
+      <label>Estado <input name="estado" placeholder="UF" /></label>
+
+      <label>CEP <input name="cep" placeholder="00000-000" /></label>
+      <label></label>
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="submit">Criar</button>
+      <a class="btn secondary" href="{{ url_for('routes.index') }}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

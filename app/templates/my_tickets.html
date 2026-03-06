@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Meus chamados</h1>
+  <div class="muted">Acompanhe o andamento e veja quem está tratando cada demanda.</div>
+</section>
+
+<section class="card">
+  <div class="ticket-grid">
+    {% if tickets|length == 0 %}
+      <div class="muted">Você ainda não abriu chamados.</div>
+    {% endif %}
+    {% for t in tickets %}
+      {% set is_overdue = (t.data_limite and t.data_limite < stats_today and t.status not in ['CONCLUIDO','CANCELADO']) %}
+      <div class="ticket-card {% if is_overdue %}overdue{% endif %}">
+        <div class="ticket-header">
+          <div class="ticket-id">#{{ t.id }}</div>
+          <div class="ticket-meta">
+            <span class="pill">{{ t.tipo }}</span>
+            <span class="pill">{{ t.status }}</span>
+            <span class="pill">{{ t.prioridade }}</span>
+          </div>
+        </div>
+        <h3 class="ticket-title"><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.titulo }}</a></h3>
+        <div class="ticket-info">
+          <div>👤 Tratando: <strong>{{ t.responsavel or "Aguardando operador" }}</strong></div>
+          <div class="muted">Atualizado: {{ t.atualizado_em }}</div>
+          <div class="muted">Prazo: {{ t.data_limite or "-" }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

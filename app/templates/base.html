@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ title or "Chamados - Compras & Envio" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+{% if g.user %}
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand">Chamados</div>
+      <div class="subtitle">Compras • Envios • Ativos</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      {% if g.user["role"] == "solicitante" %}
+        <div class="side-group">
+          <div class="side-title">Portal</div>
+          <a href="{{ url_for('routes.my_tickets') }}"><span class="nav-ico">📋</span><span>Meus chamados</span></a>
+          <a href="{{ url_for('routes.requester_new_ticket') }}"><span class="nav-ico">➕</span><span>Abrir chamado</span></a>
+        </div>
+      {% else %}
+        <div class="side-group">
+          <div class="side-title">Visão</div>
+          <a href="{{ url_for('routes.executive_home') }}"><span class="nav-ico">🏠</span><span>Início</span></a>
+          <a href="{{ url_for('routes.dashboard') }}"><span class="nav-ico">📊</span><span>Dashboard</span></a>
+          <a href="{{ url_for('reports.reports_home') }}"><span class="nav-ico">📑</span><span>Relatórios</span></a>
+        </div>
+        <div class="side-group">
+          <div class="side-title">Operação</div>
+          <a href="{{ url_for('routes.queue') }}"><span class="nav-ico">📥</span><span>Fila</span></a>
+          <a href="{{ url_for('routes.index') }}"><span class="nav-ico">🧾</span><span>Chamados</span></a>
+          <a href="{{ url_for('routes.kanban') }}"><span class="nav-ico">🗂️</span><span>Kanban</span></a>
+          <a href="{{ url_for('routes.global_search') }}"><span class="nav-ico">🔎</span><span>Busca</span></a>
+        </div>
+        <div class="side-group">
+          <div class="side-title">Patrimônio</div>
+          <a href="{{ url_for('assets_admin.assets') }}"><span class="nav-ico">💻</span><span>Ativos</span></a>
+          <a href="{{ url_for('assets_admin.assets_dashboard') }}"><span class="nav-ico">📈</span><span>Dashboard Ativos</span></a>
+        </div>
+        <div class="side-group">
+          <div class="side-title">Sistema</div>
+          <a href="{{ url_for('api.docs') }}"><span class="nav-ico">🧩</span><span>API</span></a>
+          {% if g.user["role"] == "admin" %}
+            <a href="{{ url_for('admin.users') }}"><span class="nav-ico">👥</span><span>Usuários</span></a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-user">
+      {% if g.user["role"] in ["admin", "operador"] %}
+        <a class="btn" href="{{ url_for('routes.new_ticket') }}">+ Novo</a>
+      {% elif g.user["role"] == "solicitante" %}
+        <a class="btn" href="{{ url_for('routes.requester_new_ticket') }}">+ Abrir chamado</a>
+      {% endif %}
+      <div class="sidebar-user-meta">
+        <strong>{{ g.user["nome"] }}</strong>
+        <small>{{ g.user["role"] }}</small>
+      </div>
+      <a class="logout-link" href="{{ url_for('auth.logout') }}">Sair</a>
+    </div>
+  </aside>
+{% endif %}
+
+<div class="{% if g.user %}app-shell with-sidebar{% else %}app-shell no-sidebar{% endif %}">
+  <header class="{% if g.user %}topbar topbar-compact{% else %}topbar{% endif %}">
+    {% if g.user %}
+      <div class="topbar-page">
+        <div class="topbar-title">{% if g.user["role"] == "solicitante" %}Portal do solicitante{% else %}{{ title or "Painel" }}{% endif %}</div>
+        <div class="topbar-subtitle">{% if g.user["role"] == "solicitante" %}Abra e acompanhe os seus chamados{% else %}Sistema interno de gestão operacional{% endif %}</div>
+      </div>
+    {% else %}
+      <div class="container topbar-inner">
+        <div>
+          <div class="brand">Chamados</div>
+          <div class="subtitle">Compras • Envios • Ativos</div>
+        </div>
+        <nav class="nav"><a href="{{ url_for('auth.login') }}">Login</a></nav>
+      </div>
+    {% endif %}
+  </header>
+
+  <main class="{% if g.user %}page-content{% else %}container{% endif %}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrap">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if g.user %}
+    <footer class="footer">
+      <small>DB: <code>instance/chamados.db</code> • Uploads: <code>instance/uploads/</code></small>
+    </footer>
+  {% endif %}
+</div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>{% if asset %}Editar ativo{% else %}Novo ativo{% endif %}</h1>
+  <form method="post" action="{% if asset %}{{ url_for('assets_admin.edit_asset_route', asset_id=asset.id) }}{% else %}{{ url_for('assets_admin.create_asset_route') }}{% endif %}" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <label>Tag do ativo
+        <input name="tag" required value="{{ asset.tag if asset else '' }}" placeholder="Ex: NB-001">
+      </label>
+      <label>Tipo
+        <select name="tipo" required>
+          {% for t in ASSET_TYPES %}<option value="{{ t }}" {% if asset and asset.tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Modelo
+        <input name="modelo" required value="{{ asset.modelo if asset else '' }}" placeholder="Ex: Dell Latitude 5420">
+      </label>
+      <label>Serial
+        <input name="serial_number" value="{{ asset.serial_number if asset else '' }}" placeholder="Ex: SN123456">
+      </label>
+      <label>Base / Local
+        <input name="local_base" value="{{ asset.local_base if asset else '' }}" placeholder="Ex: Manaus / Camaçari">
+      </label>
+      <label>Responsável
+        <input name="responsavel" value="{{ asset.responsavel if asset else '' }}" placeholder="Ex: Eliel Mesquita">
+      </label>
+      <label>Status
+        <select name="status" required>
+          {% for s in ASSET_STATUSES %}<option value="{{ s }}" {% if asset and asset.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="span-2">Observações
+        <textarea name="observacoes" rows="4">{{ asset.observacoes if asset else '' }}</textarea>
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">{% if asset %}Salvar{% else %}Criar ativo{% endif %}</button>
+      <a class="btn secondary" href="{{ url_for('assets_admin.assets') }}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

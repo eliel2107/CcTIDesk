@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="auth-wrap">
+  <div class="auth-card">
+    <h1>Entrar</h1>
+    <p class="muted">Faça login para acessar o sistema.</p>
+    <form method="post" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>E-mail
+        <input type="email" name="email" placeholder="admin@local" required>
+      </label>
+      <label>Senha
+        <input type="password" name="password" placeholder="••••••••" required>
+      </label>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+    <div class="muted auth-help">
+      Primeiro acesso padrão:<br>
+      <code>admin@local</code> / <code>admin123</code>
+    </div>
+  </div>
+</section>
+{% endblock %}

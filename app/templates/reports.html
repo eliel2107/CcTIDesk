@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="eyebrow">Relatórios</div>
+      <h1>Análises operacionais</h1>
+      <div class="muted">Módulo para acompanhar SLA, tempo médio de resolução e distribuição dos ativos.</div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Filtros do relatório de chamados</h2>
+  <form method="get" class="filters">
+    <div class="grid">
+      <label>Data inicial
+        <input type="date" name="start_date" value="{{ start_date }}">
+      </label>
+      <label>Data final
+        <input type="date" name="end_date" value="{{ end_date }}">
+      </label>
+      <label>SLA (dias)
+        <input type="number" min="1" step="1" name="sla_days" value="{{ sla_days }}">
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Atualizar métricas</button>
+      <a class="btn secondary" href="{{ url_for('reports.reports_home') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+<section class="chart-grid">
+  <div class="card">
+    <h2>Chamados / SLA</h2>
+    <div class="summary-grid">
+      <div class="summary-box"><span>Total de chamados</span><strong>{{ ticket_stats.total }}</strong></div>
+      <div class="summary-box"><span>Resolvidos</span><strong>{{ ticket_stats.resolved_total }}</strong></div>
+      <div class="summary-box"><span>Tempo médio</span><strong>{{ ticket_stats.avg_resolution_days }} dia(s)</strong></div>
+      <div class="summary-box"><span>Dentro do SLA</span><strong>{{ ticket_stats.within_sla_count }}</strong></div>
+      <div class="summary-box"><span>Fora do SLA</span><strong>{{ ticket_stats.outside_sla_count }}</strong></div>
+      <div class="summary-box"><span>% dentro do SLA</span><strong>{{ ticket_stats.within_sla_pct }}%</strong></div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('reports.tickets_xlsx', start_date=start_date, end_date=end_date, sla_days=sla_days) }}">Exportar XLSX</a>
+      <a class="btn secondary" href="{{ url_for('reports.tickets_pdf', start_date=start_date, end_date=end_date, sla_days=sla_days) }}">Exportar PDF</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ativos</h2>
+    <div class="summary-grid">
+      <div class="summary-box"><span>Total de ativos</span><strong>{{ asset_stats.total }}</strong></div>
+      {% for k,v in asset_stats.by_status.items() %}
+        <div class="summary-box"><span>{{ k }}</span><strong>{{ v }}</strong></div>
+      {% endfor %}
+    </div>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('reports.assets_xlsx') }}">Exportar XLSX</a>
+      <a class="btn secondary" href="{{ url_for('reports.assets_pdf') }}">Exportar PDF</a>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Top responsáveis</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Responsável</th><th>Chamados</th></tr></thead>
+      <tbody>
+        {% if ticket_stats.top_responsaveis|length == 0 %}
+          <tr><td colspan="2" class="muted">Nenhum dado.</td></tr>
+        {% endif %}
+        {% for name, total in ticket_stats.top_responsaveis %}
+          <tr><td>{{ name }}</td><td><strong>{{ total }}</strong></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Chamados fora do SLA</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Tipo</th><th>Título</th><th>Responsável</th><th>Resolução (dias)</th></tr></thead>
+      <tbody>
+        {% set outside = ticket_stats.resolved_items|selectattr('within_sla', 'equalto', false)|list %}
+        {% if outside|length == 0 %}
+          <tr><td colspan="5" class="muted">Nenhum chamado fora do SLA no período.</td></tr>
+        {% endif %}
+        {% for item in outside[:20] %}
+          <tr>
+            <td><a href="{{ url_for('routes.ticket_detail', ticket_id=item.id) }}">#{{ item.id }}</a></td>
+            <td>{{ item.tipo }}</td>
+            <td>{{ item.titulo }}</td>
+            <td>{{ item.responsavel or "-" }}</td>
+            <td><strong>{{ item.resolution_days }}</strong></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="eyebrow">Visão geral</div>
+      <h1>Dashboard</h1>
+      <div class="muted">Hoje: <strong>{{ stats.today }}</strong> &nbsp;•&nbsp; Total de chamados: <strong>{{ stats.total }}</strong></div>
+    </div>
+  </div>
+
+  <div class="kpi-grid" style="margin-top:16px;">
+    <div class="kpi kpi-open">
+      <div class="kpi-title">Em aberto</div>
+      <div class="kpi-value">{{ stats.open_count }}</div>
+      <div class="muted">chamados ativos</div>
+    </div>
+    <div class="kpi kpi-done">
+      <div class="kpi-title">Concluídos (30d)</div>
+      <div class="kpi-value">{{ stats.concluded_30d }}</div>
+      <div class="muted">últimos 30 dias</div>
+    </div>
+    <div class="kpi kpi-overdue">
+      <div class="kpi-title">Atrasados</div>
+      <div class="kpi-value">{{ stats.overdue|length }}</div>
+      <div class="muted">com prazo vencido</div>
+    </div>
+    <div class="kpi kpi-urgent">
+      <div class="kpi-title">Urgentes</div>
+      <div class="kpi-value">{{ stats.by_prioridade.get('URGENTE', 0) }}</div>
+      <div class="muted">prioridade máxima</div>
+    </div>
+  </div>
+</section>
+
+{# ── Gráficos linha 1 ── #}
+<div class="chart-grid">
+  <div class="card">
+    <h2>Chamados por status</h2>
+    <div class="chart-container"><canvas id="statusChart"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Distribuição por prioridade</h2>
+    <div class="chart-container"><canvas id="priorityChart"></canvas></div>
+  </div>
+</div>
+
+{# ── Gráficos linha 2 ── #}
+<div class="chart-grid">
+  <div class="card">
+    <h2>Aging dos chamados em aberto</h2>
+    <div class="chart-container"><canvas id="agingChart"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Top responsáveis (em aberto)</h2>
+    <div class="chart-container"><canvas id="ownersChart"></canvas></div>
+  </div>
+</div>
+
+{# ── Tabela de atrasados ── #}
+<section class="card">
+  <div class="detail-head">
+    <h2>⚠️ Chamados atrasados</h2>
+    {% if stats.overdue|length > 0 %}
+      <span class="badge-unassigned">{{ stats.overdue|length }} atrasado(s)</span>
+    {% endif %}
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Tipo</th><th>Título</th><th>Status</th><th>Prioridade</th><th>Responsável</th><th>Data limite</th><th>Atraso</th></tr></thead>
+      <tbody>
+        {% if stats.overdue|length == 0 %}
+          <tr><td colspan="8" class="muted" style="text-align:center;padding:24px;">Nenhum chamado atrasado 🎉</td></tr>
+        {% endif %}
+        {% for r in stats.overdue %}
+          <tr>
+            <td><a href="{{ url_for('routes.ticket_detail', ticket_id=r.id) }}">#{{ r.id }}</a></td>
+            <td><span class="pill">{{ r.tipo }}</span></td>
+            <td class="title-col"><a href="{{ url_for('routes.ticket_detail', ticket_id=r.id) }}">{{ r.titulo }}</a></td>
+            <td><span class="pill">{{ r.status }}</span></td>
+            <td><span class="pill">{{ r.prioridade }}</span></td>
+            <td>{{ r.responsavel or "-" }}</td>
+            <td><strong>{{ r.data_limite }}</strong></td>
+            <td>{% if r.days_late is not none %}<span style="color:#ff7a7a;font-weight:800;">+{{ r.days_late }}d</span>{% else %}-{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316'];
+const GRID_COLOR  = 'rgba(141,180,255,0.08)';
+const TICK_COLOR  = '#7a90b8';
+const TEXT_COLOR  = '#e7eefc';
+
+Chart.defaults.color = TICK_COLOR;
+Chart.defaults.font.family = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
+
+function baseOptions(extra) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: { legend: { labels: { color: TEXT_COLOR, boxWidth: 14, padding: 14 } }, ...extra },
+  };
+}
+
+function gridOpts() {
+  return {
+    scales: {
+      x: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR } },
+      y: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR }, beginAtZero: true },
+    }
+  };
+}
+
+// Status bar chart
+new Chart(document.getElementById("statusChart"), {
+  type: "bar",
+  data: {
+    labels: {{ stats.by_status.keys()|list|tojson }},
+    datasets: [{
+      label: "Chamados",
+      data: {{ stats.by_status.values()|list|tojson }},
+      backgroundColor: PALETTE,
+      borderRadius: 8,
+      borderSkipped: false,
+    }]
+  },
+  options: { ...baseOptions({ legend: { display: false } }), ...gridOpts() },
+});
+
+// Priority doughnut
+new Chart(document.getElementById("priorityChart"), {
+  type: "doughnut",
+  data: {
+    labels: {{ stats.by_prioridade.keys()|list|tojson }},
+    datasets: [{
+      data: {{ stats.by_prioridade.values()|list|tojson }},
+      backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'],
+      borderWidth: 2,
+      borderColor: '#111b2e',
+      hoverOffset: 8,
+    }]
+  },
+  options: {
+    ...baseOptions({}),
+    cutout: '65%',
+    plugins: {
+      legend: { position: 'right', labels: { color: TEXT_COLOR, padding: 14, boxWidth: 14 } }
+    }
+  },
+});
+
+// Aging bar chart
+new Chart(document.getElementById("agingChart"), {
+  type: "bar",
+  data: {
+    labels: {{ stats.aging_buckets.keys()|list|tojson }},
+    datasets: [{
+      label: "Chamados",
+      data: {{ stats.aging_buckets.values()|list|tojson }},
+      backgroundColor: ['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444'],
+      borderRadius: 8,
+      borderSkipped: false,
+    }]
+  },
+  options: { ...baseOptions({ legend: { display: false } }), ...gridOpts() },
+});
+
+// Top owners horizontal bar
+new Chart(document.getElementById("ownersChart"), {
+  type: "bar",
+  data: {
+    labels: {{ stats.top_responsaveis|map(attribute='resp')|list|tojson }},
+    datasets: [{
+      label: "Em aberto",
+      data: {{ stats.top_responsaveis|map(attribute='total')|list|tojson }},
+      backgroundColor: '#3b82f6',
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    ...baseOptions({ legend: { display: false } }),
+    indexAxis: 'y',
+    scales: {
+      x: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR }, beginAtZero: true },
+      y: { grid: { display: false }, ticks: { color: TEXT_COLOR } },
+    }
+  },
+});
+</script>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <h1>Lista de chamados</h1>
+      <div class="muted">Visualização em cards com filtros operacionais.</div>
+    </div>
+    <div class="actions">
+      <a class="btn ghost" href="{{ url_for('routes.executive_home') }}">Painel executivo</a>
+      <a class="btn ghost" href="{{ url_for('routes.kanban') }}">Ver Kanban</a>
+    </div>
+  </div>
+
+  <form method="get" class="filters">
+    <div class="grid">
+      <label>Status
+        <select name="status">
+          <option value="">(todos)</option>
+          {% for s in STATUSES %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </label>
+
+      <label>Tipo
+        <select name="tipo">
+          <option value="">(todos)</option>
+          {% for t in TYPES %}<option value="{{ t }}" {% if filters.tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </label>
+
+      <label>Prioridade
+        <select name="prioridade">
+          <option value="">(todas)</option>
+          {% for p in PRIORITIES %}<option value="{{ p }}" {% if filters.prioridade == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+        </select>
+      </label>
+
+      <label>Responsável
+        <input name="responsavel" value="{{ filters.responsavel }}" placeholder="ex: Eliel / Iago" />
+      </label>
+
+      <label>Ativo vinculado
+        <select name="asset_id">
+          <option value="">(todos)</option>
+          {% for a in assets_for_filter %}
+            <option value="{{ a.id }}" {% if filters.asset_id == (a.id|string) %}selected{% endif %}>#{{ a.id }} • {{ a.tag }} • {{ a.modelo }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Ordenar por
+        <select name="sort_by">
+          <option value="">Atualização</option>
+          <option value="prazo_asc" {% if filters.sort_by == "prazo_asc" %}selected{% endif %}>Prazo (mais próximo)</option>
+          <option value="prazo_desc" {% if filters.sort_by == "prazo_desc" %}selected{% endif %}>Prazo (mais distante)</option>
+          <option value="prioridade" {% if filters.sort_by == "prioridade" %}selected{% endif %}>Prioridade</option>
+          <option value="titulo" {% if filters.sort_by == "titulo" %}selected{% endif %}>Título</option>
+        </select>
+      </label>
+
+      <label class="span-2">Busca
+        <input name="q" value="{{ filters.q }}" placeholder="título, solicitante, fornecedor, rastreio, descrição, CEP...">
+      </label>
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="submit">Filtrar</button>
+      <a class="btn secondary" href="{{ url_for('routes.index') }}">Limpar</a>
+      <a class="btn ghost" href="{{ url_for('routes.export_csv', **filters) }}">Exportar CSV</a>
+    </div>
+  </form>
+
+  <div class="chip-row">
+    {% if filters.status %}<span class="chip">Status: {{ filters.status }}</span>{% endif %}
+    {% if filters.tipo %}<span class="chip">Tipo: {{ filters.tipo }}</span>{% endif %}
+    {% if filters.prioridade %}<span class="chip">Prioridade: {{ filters.prioridade }}</span>{% endif %}
+    {% if filters.responsavel %}<span class="chip">Responsável: {{ filters.responsavel }}</span>{% endif %}
+    {% if filters.asset_id %}<span class="chip">Ativo filtrado</span>{% endif %}
+    {% if filters.q %}<span class="chip">Busca: {{ filters.q }}</span>{% endif %}
+  </div>
+</section>
+
+<section class="layout-premium">
+  <div class="main-pane">
+    <div class="ticket-grid">
+      {% if tickets|length == 0 %}
+        <div class="muted">Nenhum chamado encontrado.</div>
+      {% endif %}
+
+      {% for t in tickets %}
+        {% set is_overdue = (t.data_limite and t.data_limite < stats_today and t.status not in ['CONCLUIDO','CANCELADO']) %}
+        {% set prio_class = 'prio-normal' %}
+        {% if t.prioridade == 'URGENTE' %}{% set prio_class = 'prio-urgent' %}{% elif t.prioridade == 'ALTA' %}{% set prio_class = 'prio-high' %}{% endif %}
+        <div class="ticket-card premium-ticket {% if is_overdue %}overdue{% endif %}">
+          <div class="ticket-header">
+            <div class="ticket-left">
+              <div class="ticket-id">#{{ t.id }}</div>
+              <div class="ticket-meta">
+                <span class="pill">{{ t.tipo }}</span>
+                <span class="pill">{{ t.status }}</span>
+                <span class="pill {{ prio_class }}">{{ t.prioridade }}</span>
+                {% if t.asset_id %}<span class="pill">Ativo #{{ t.asset_id }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="ticket-right">
+              {% if t.data_limite %}
+                <div class="due {% if is_overdue %}due-overdue{% endif %}">{% if is_overdue %}⚠{% else %}⏰{% endif %} {{ t.data_limite }}</div>
+              {% else %}
+                <div class="due muted">⏰ -</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <h3 class="ticket-title">
+            <a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.titulo }}</a>
+          </h3>
+
+          <div class="ticket-info">
+            <div>👤 <strong>{{ t.responsavel or "Sem responsável" }}</strong></div>
+            <div class="muted">Solicitante: {{ t.solicitante or "-" }}</div>
+            <div class="muted">Atualizado: {{ t.atualizado_em }}</div>
+          </div>
+
+          <div class="ticket-actions">
+            <a class="btn secondary" href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">Abrir</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <aside class="side-pane">
+    <section class="card sticky-card">
+      <h2>Leitura rápida</h2>
+      <div class="summary-list">
+        <div class="summary-item"><span>Página</span><strong>{{ page }} / {{ total_pages }}</strong></div>
+        <div class="summary-item"><span>Total</span><strong>{{ total }}</strong></div>
+        <div class="summary-item"><span>Urgentes</span><strong>{{ tickets|selectattr('prioridade', 'equalto', 'URGENTE')|list|length }}</strong></div>
+        <div class="summary-item"><span>Exibindo</span><strong>{{ tickets|length }}</strong></div>
+      </div>
+      <div class="muted">Use os filtros acima para montar recortes por responsável, ativo e prazo.</div>
+    </section>
+  </aside>
+</section>
+
+{# ── Paginação ── #}
+{% if total_pages > 1 %}
+<section class="card" style="padding:12px 16px;">
+  <div class="pagination">
+    {% set qs = filters.items()|list %}
+    {% if page > 1 %}
+      <a class="btn secondary pag-btn" href="?page={{ page - 1 }}{% for k,v in qs %}&{{ k }}={{ v }}{% endfor %}">← Anterior</a>
+    {% else %}
+      <span class="btn secondary pag-btn" style="opacity:.4;cursor:default;">← Anterior</span>
+    {% endif %}
+
+    {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+      {% if p == page %}
+        <span class="btn pag-btn pag-active">{{ p }}</span>
+      {% else %}
+        <a class="btn secondary pag-btn" href="?page={{ p }}{% for k,v in qs %}&{{ k }}={{ v }}{% endfor %}">{{ p }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+      <a class="btn secondary pag-btn" href="?page={{ page + 1 }}{% for k,v in qs %}&{{ k }}={{ v }}{% endfor %}">Próxima →</a>
+    {% else %}
+      <span class="btn secondary pag-btn" style="opacity:.4;cursor:default;">Próxima →</span>
+    {% endif %}
+
+    <span class="pag-info">{{ total }} chamados</span>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

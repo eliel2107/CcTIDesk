@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <h1>Abrir novo chamado</h1>
+      <div class="muted">Preencha os dados básicos. O chamado irá para a fila de atendimento.</div>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('routes.requester_create_ticket') }}" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <label>Tipo
+        <select name="tipo" required>
+          {% for t in TYPES %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Prioridade
+        <select name="prioridade" required>
+          {% for p in PRIORITIES %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="span-2">Título
+        <input name="titulo" required placeholder="Ex: Compra de notebook / Envio de equipamento">
+      </label>
+      <label class="span-2">Descrição
+        <textarea name="descricao" rows="6" placeholder="Descreva a necessidade, contexto, quantidade, prazo e observações."></textarea>
+      </label>
+      <label>Data limite
+        <input type="date" name="data_limite">
+      </label>
+      <label>Destinatário (se envio)
+        <input name="destinatario" placeholder="Nome de quem vai receber">
+      </label>
+      <label>Telefone
+        <input name="telefone" placeholder="Contato">
+      </label>
+      <label class="span-2">Endereço
+        <input name="endereco" placeholder="Rua, número, complemento">
+      </label>
+      <label>Cidade
+        <input name="cidade">
+      </label>
+      <label>Estado
+        <input name="estado">
+      </label>
+      <label>CEP
+        <input name="cep">
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Enviar chamado</button>
+      <a class="btn secondary" href="{{ url_for('routes.my_tickets') }}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

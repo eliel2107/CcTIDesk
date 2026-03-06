@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="eyebrow">Chamado</div>
+      <h1>#{{ ticket.id }} • {{ ticket.titulo }}</h1>
+      <div class="muted">Criado em {{ ticket.criado_em }} • Atualizado em {{ ticket.atualizado_em }}</div>
+    </div>
+    <div class="badges">
+      <span class="pill">{{ ticket.tipo }}</span>
+      <span class="pill">{{ ticket.prioridade }}</span>
+      <span class="pill">{{ ticket.status }}</span>
+      {% if ticket.data_limite %}<span class="pill">⏰ {{ ticket.data_limite }}</span>{% endif %}
+    </div>
+  </div>
+</section>
+
+{# ── Banner de status para solicitante ── #}
+{% if g.user and g.user.role == 'solicitante' %}
+  {% if ticket.assigned_user_id %}
+    <div class="alert-assigned">
+      🔒 <strong>Chamado em atendimento.</strong>
+      Este chamado foi assumido por <strong>{{ ticket.responsavel or "um operador" }}</strong> e está sendo tratado.
+      Você não pode editá-lo neste momento.
+    </div>
+  {% else %}
+    <div class="alert-open">
+      📬 <strong>Aguardando atribuição.</strong>
+      Seu chamado ainda não foi assumido por nenhum operador. Você pode adicionar anexos enquanto aguarda.
+    </div>
+  {% endif %}
+{% endif %}
+
+<section class="layout-premium">
+  <div class="main-pane">
+    <section class="card">
+      <h2>Resumo executivo</h2>
+      <div class="summary-grid">
+        <div class="summary-box"><span>Solicitante</span><strong>{{ ticket.solicitante or "-" }}</strong></div>
+        <div class="summary-box"><span>Responsável</span><strong>{{ ticket.responsavel or "Aguardando operador" }}</strong></div>
+        <div class="summary-box"><span>Fornecedor</span><strong>{{ ticket.fornecedor or "-" }}</strong></div>
+        <div class="summary-box"><span>Centro de custo</span><strong>{{ ticket.centro_custo or "-" }}</strong></div>
+        <div class="summary-box"><span>Valor estimado</span><strong>{% if ticket.valor_estimado is not none %}R$ {{ "%.2f"|format(ticket.valor_estimado) }}{% else %}-{% endif %}</strong></div>
+        <div class="summary-box"><span>Rastreio</span><strong>{{ ticket.codigo_rastreio or "-" }}</strong></div>
+      </div>
+      <h3>Descrição</h3>
+      <p style="white-space: pre-wrap;">{{ ticket.descricao or "-" }}</p>
+      <h3>Ativo vinculado</h3>
+      {% if asset %}<p><a href="{{ url_for('assets_admin.asset_detail', asset_id=asset.id) }}">#{{ asset.id }} • {{ asset.tag }} • {{ asset.modelo }}</a></p>{% else %}<p>-</p>{% endif %}
+      <h3>Link do pedido</h3>
+      {% if ticket.link_pedido %}<p><a href="{{ ticket.link_pedido }}" target="_blank" rel="noopener">Abrir link</a></p>{% else %}<p>-</p>{% endif %}
+    </section>
+
+    {# ── Checklist: admin/operador gerenciam; solicitante vê somente leitura ── #}
+    <section class="card">
+      <h2>Checklist de etapas</h2>
+      {% if g.user and g.user.role in ['admin', 'operador'] %}
+        <div class="muted">Marque as etapas concluídas. Você também pode editar, adicionar e reordenar.</div>
+        <ul class="checklist">
+          {% for s in steps %}
+            <li class="step-row">
+              <form method="post" action="{{ url_for('routes.toggle_step_route', ticket_id=ticket.id, step_id=s.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="check">
+                  <input type="checkbox" name="done" onchange="this.form.submit()" {% if s.done == 1 %}checked{% endif %}>
+                  <span class="{% if s.done == 1 %}done{% endif %}">{{ s.step_order }}. {{ s.step_text }}</span>
+                </label>
+              </form>
+              <div class="step-actions">
+                <form method="post" action="{{ url_for('routes.move_step_route', ticket_id=ticket.id, step_id=s.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="direction" value="up">
+                  <button class="mini" type="submit" title="Subir">↑</button>
+                </form>
+                <form method="post" action="{{ url_for('routes.move_step_route', ticket_id=ticket.id, step_id=s.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="direction" value="down">
+                  <button class="mini" type="submit" title="Descer">↓</button>
+                </form>
+                <form method="post" action="{{ url_for('routes.delete_step_route', ticket_id=ticket.id, step_id=s.id) }}" onsubmit="return confirm('Remover esta etapa?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="mini danger" type="submit" title="Remover">✕</button>
+                </form>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+        <form method="post" action="{{ url_for('routes.add_step_route', ticket_id=ticket.id) }}" class="add-step">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input name="text" placeholder="Nova etapa" required>
+          <select name="position">
+            <option value="end">Adicionar no final</option>
+            <option value="before">Adicionar antes da etapa...</option>
+          </select>
+          <select name="ref_step_id">
+            <option value="">(escolher etapa)</option>
+            {% for s in steps %}
+              <option value="{{ s.id }}">{{ s.step_order }}. {{ s.step_text }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn" type="submit">Adicionar etapa</button>
+        </form>
+      {% else %}
+        <div class="muted">Acompanhe o progresso das etapas abaixo.</div>
+        <ul class="checklist">
+          {% for s in steps %}
+            <li class="step-row" style="opacity:.85;">
+              <label class="check" style="pointer-events:none;">
+                <input type="checkbox" {% if s.done == 1 %}checked{% endif %} disabled>
+                <span class="{% if s.done == 1 %}done{% endif %}">{{ s.step_order }}. {{ s.step_text }}</span>
+              </label>
+            </li>
+          {% endfor %}
+        </ul>
+        {% if steps|length == 0 %}<div class="muted" style="margin-top:8px;">Nenhuma etapa cadastrada ainda.</div>{% endif %}
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>Histórico</h2>
+      <ul class="timeline">
+        {% for l in logs %}
+          <li>
+            <div class="time">{{ l.criado_em }}</div>
+            <div class="event"><strong>{{ l.evento }}</strong><div class="muted">{{ l.detalhe }}</div></div>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <aside class="side-pane">
+    <section class="card sticky-card">
+
+      {# ═══ PAINEL ADMIN / OPERADOR ═══ #}
+      {% if g.user and g.user.role in ['admin', 'operador'] %}
+
+        <h2>Ações rápidas</h2>
+        <form method="post" action="{{ url_for('routes.update_status_route', ticket_id=ticket.id) }}" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Novo status
+            <select name="status" required>
+              {% for s in STATUSES %}<option value="{{ s }}" {% if s == ticket.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+          </label>
+          <label>Detalhe (opcional) <input name="detalhe" placeholder="ex: Aguardando aprovação / Rastreio XYZ" /></label>
+          <div class="actions"><button class="btn" type="submit">Salvar status</button></div>
+        </form>
+
+        <hr class="sep" />
+
+        <h3>Editar chamado</h3>
+        <form method="post" action="{{ url_for('routes.edit_ticket_route', ticket_id=ticket.id) }}" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Responsável <input name="responsavel" value="{{ ticket.responsavel or '' }}" /></label>
+          <label>Fornecedor <input name="fornecedor" value="{{ ticket.fornecedor or '' }}" /></label>
+          <label>Centro de custo <input name="centro_custo" value="{{ ticket.centro_custo or '' }}" /></label>
+          <label>Valor estimado (R$) <input name="valor_estimado" value="{% if ticket.valor_estimado is not none %}{{ ticket.valor_estimado }}{% endif %}" /></label>
+          <label>Link do pedido <input name="link_pedido" value="{{ ticket.link_pedido or '' }}" /></label>
+          <label>Código de rastreio <input name="codigo_rastreio" value="{{ ticket.codigo_rastreio or '' }}" /></label>
+          <label>Data limite (YYYY-MM-DD) <input name="data_limite" value="{{ ticket.data_limite or '' }}" /></label>
+          <label>Ativo vinculado
+            <select name="asset_id">
+              <option value="">(nenhum)</option>
+              {% for a in assets %}<option value="{{ a.id }}" {% if ticket.asset_id == a.id %}selected{% endif %}>#{{ a.id }} • {{ a.tag }} • {{ a.modelo }}</option>{% endfor %}
+            </select>
+          </label>
+          <div class="divider">Entrega</div>
+          <label>Destinatário <input name="destinatario" value="{{ ticket.destinatario or '' }}" /></label>
+          <label>Telefone <input name="telefone" value="{{ ticket.telefone or '' }}" /></label>
+          <label>Endereço <input name="endereco" value="{{ ticket.endereco or '' }}" /></label>
+          <label>Cidade <input name="cidade" value="{{ ticket.cidade or '' }}" /></label>
+          <label>Estado <input name="estado" value="{{ ticket.estado or '' }}" /></label>
+          <label>CEP <input name="cep" value="{{ ticket.cep or '' }}" /></label>
+          <div class="actions"><button class="btn secondary" type="submit">Atualizar</button></div>
+        </form>
+
+        <hr class="sep" />
+
+        <h3>Anexos</h3>
+        <div class="muted">Permitidos: {{ allowed_ext }} • Limite: {{ max_files }} anexos por chamado.</div>
+        <form method="post" action="{{ url_for('routes.upload_attachment', ticket_id=ticket.id) }}" enctype="multipart/form-data" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="file" name="files" multiple required />
+          <div class="actions"><button class="btn" type="submit">Enviar anexos</button></div>
+        </form>
+        <ul class="files">
+          {% for a in attachments %}
+            <li class="file-row">
+              <div class="file-left">
+                <a href="{{ url_for('routes.download_attachment', ticket_id=ticket.id, attachment_id=a.id) }}">{{ a.original_name }}</a>
+                <span class="muted">({{ (a.size_bytes or 0) // 1024 }} KB • {{ a.uploaded_em }})</span>
+              </div>
+              <form method="post" action="{{ url_for('routes.delete_attachment_route', ticket_id=ticket.id, attachment_id=a.id) }}" onsubmit="return confirm('Excluir este anexo?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="mini danger" type="submit">Excluir</button>
+              </form>
+            </li>
+          {% endfor %}
+          {% if attachments|length == 0 %}<li class="muted">Nenhum anexo.</li>{% endif %}
+        </ul>
+
+      {# ═══ PAINEL SOLICITANTE ═══ #}
+      {% else %}
+
+        <h2>Seus anexos</h2>
+        {% if not ticket.assigned_user_id %}
+          <div class="muted" style="margin-bottom:10px;">Adicione documentos ou arquivos que ajudem no atendimento.</div>
+          <form method="post" action="{{ url_for('routes.upload_attachment', ticket_id=ticket.id) }}" enctype="multipart/form-data" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="file" name="files" multiple required />
+            <div class="actions"><button class="btn" type="submit">Enviar anexos</button></div>
+          </form>
+        {% else %}
+          <div class="muted" style="margin-bottom:10px;">🔒 Envio bloqueado — chamado em atendimento.</div>
+        {% endif %}
+
+        <ul class="files" style="margin-top:12px;">
+          {% for a in attachments %}
+            <li class="file-row">
+              <div class="file-left">
+                <a href="{{ url_for('routes.download_attachment', ticket_id=ticket.id, attachment_id=a.id) }}">{{ a.original_name }}</a>
+                <span class="muted">({{ (a.size_bytes or 0) // 1024 }} KB • {{ a.uploaded_em }})</span>
+              </div>
+              {% if not ticket.assigned_user_id %}
+                <form method="post" action="{{ url_for('routes.delete_attachment_route', ticket_id=ticket.id, attachment_id=a.id) }}" onsubmit="return confirm('Excluir este anexo?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="mini danger" type="submit">Excluir</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+          {% if attachments|length == 0 %}<li class="muted">Nenhum anexo.</li>{% endif %}
+        </ul>
+
+      {% endif %}
+
+    </section>
+  </aside>
+</section>
+{% endblock %}

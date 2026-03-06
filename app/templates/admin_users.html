@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Usuários</h1>
+  <div class="muted">Crie e gerencie usuários do sistema.</div>
+</section>
+
+<section class="card">
+  <h2>Novo usuário</h2>
+  <form method="post" action="{{ url_for('admin.create_user_route') }}" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <label>Nome
+        <input name="nome" required placeholder="Ex: Eliel Mesquita">
+      </label>
+      <label>E-mail
+        <input name="email" type="email" required placeholder="usuario@empresa.com">
+      </label>
+      <label>Senha
+        <input name="password" type="password" required placeholder="mínimo 6 caracteres">
+      </label>
+      <label>Perfil
+        <select name="role" required>
+          {% for role in roles %}
+            <option value="{{ role }}">{{ role }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label><input type="checkbox" name="active" checked> Usuário ativo</label>
+    </div>
+    <div class="actions"><button class="btn" type="submit">Criar usuário</button></div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Lista de usuários</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
+      <tbody>
+        {% if users|length == 0 %}<tr><td colspan="6" class="muted">Nenhum usuário encontrado.</td></tr>{% endif %}
+        {% for u in users %}
+          <tr>
+            <td>{{ u.nome }}</td>
+            <td>{{ u.email }}</td>
+            <td><span class="pill">{{ u.role }}</span></td>
+            <td>{% if u.active == 1 %}<span class="pill">ATIVO</span>{% else %}<span class="pill">INATIVO</span>{% endif %}</td>
+            <td>{{ u.created_em }}</td>
+            <td>
+              <details>
+                <summary class="mini">Editar</summary>
+                <form method="post" action="{{ url_for('admin.edit_user_route', user_id=u.id) }}" class="form" style="margin-top:8px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <label>Nome <input name="nome" value="{{ u.nome }}" required></label>
+                  <label>Email <input name="email" value="{{ u.email }}" required></label>
+                  <label>Perfil
+                    <select name="role" required>
+                      {% for role in roles %}
+                        <option value="{{ role }}" {% if role == u.role %}selected{% endif %}>{{ role }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                  <label><input type="checkbox" name="active" {% if u.active == 1 %}checked{% endif %}> Ativo</label>
+                  <div class="actions"><button class="btn secondary" type="submit">Salvar</button></div>
+                </form>
+              </details>
+              <form method="post" action="{{ url_for('admin.toggle_user_route', user_id=u.id) }}" style="margin-top:8px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="mini danger" type="submit">{% if u.active == 1 %}Desativar{% else %}Ativar{% endif %}</button>
+              </form>
+              {% if u.id != g.user.id %}
+              <form method="post" action="{{ url_for('admin.delete_user_route', user_id=u.id) }}"
+                    style="margin-top:6px"
+                    onsubmit="return confirm('Tem certeza que deseja EXCLUIR o usuário {{ u.nome }}? Esta ação não pode ser desfeita.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="mini danger" type="submit" title="Excluir permanentemente">🗑 Excluir</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

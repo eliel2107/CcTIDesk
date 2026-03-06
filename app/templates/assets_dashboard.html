@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Dashboard de Ativos</h1>
+  <div class="muted">Visão consolidada do parque de ativos cadastrado.</div>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-title">Total de ativos</div>
+      <div class="kpi-value">{{ stats.total }}</div>
+    </div>
+    {% for k,v in stats.by_status.items() %}
+      <div class="kpi">
+        <div class="kpi-title">{{ k }}</div>
+        <div class="kpi-value">{{ v }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="chart-grid">
+  <div class="card">
+    <h2>Ativos por status</h2>
+    <canvas id="assetStatusChart" height="120"></canvas>
+  </div>
+  <div class="card">
+    <h2>Ativos por tipo</h2>
+    <canvas id="assetTypeChart" height="120"></canvas>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Resumo por tipo</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tipo</th><th>Quantidade</th></tr></thead>
+      <tbody>
+        {% if stats.by_tipo|length == 0 %}
+          <tr><td colspan="2" class="muted">Nenhum ativo cadastrado.</td></tr>
+        {% endif %}
+        {% for k,v in stats.by_tipo.items() %}
+          <tr><td>{{ k }}</td><td><strong>{{ v }}</strong></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById("assetStatusChart"), {
+  type: "doughnut",
+  data: {
+    labels: {{ stats.by_status.keys()|list|tojson }},
+    datasets: [{ data: {{ stats.by_status.values()|list|tojson }} }]
+  },
+  options: { responsive: true }
+});
+
+new Chart(document.getElementById("assetTypeChart"), {
+  type: "bar",
+  data: {
+    labels: {{ stats.by_tipo.keys()|list|tojson }},
+    datasets: [{ label: "Ativos", data: {{ stats.by_tipo.values()|list|tojson }} }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } } }
+});
+</script>
+{% endblock %}

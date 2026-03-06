@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="kanban-head">
+    <div>
+      <h1>Kanban</h1>
+      <div class="muted">Arraste os cards entre colunas para mudar o status.</div>
+    </div>
+    <div class="kanban-tools">
+      <a class="btn secondary" href="{{ url_for('routes.index') }}">Voltar para Lista</a>
+    </div>
+  </div>
+
+  <div class="muted" style="margin-top:10px">
+    * Observação: ao soltar o card em outra coluna, o sistema salva automaticamente o novo status.
+  </div>
+</section>
+
+<section class="card">
+  <div class="kanban-board" id="board">
+    {% for col in columns %}
+      <div class="kanban-col" data-status="{{ col.status }}">
+        <div class="kanban-col-head">
+          <div class="kanban-col-title">{{ col.title }}</div>
+          <div class="kanban-col-count">{{ col["cards"]|length }}</div>
+        </div>
+
+        <div class="kanban-dropzone" data-status="{{ col.status }}">
+          {% for t in col["cards"] %}
+            {% set is_overdue = (t.data_limite and t.data_limite < stats_today and t.status not in ['CONCLUIDO','CANCELADO']) %}
+            <div class="kb-card {% if is_overdue %}overdue{% endif %}" draggable="true" data-id="{{ t.id }}" data-status="{{ t.status }}">
+              <div class="kb-top">
+                <div class="kb-id">#{{ t.id }}</div>
+                <div class="kb-pills">
+                  <span class="pill">{{ t.tipo }}</span>
+                  <span class="pill">{{ t.prioridade }}</span>
+                </div>
+              </div>
+
+              <div class="kb-title">
+                <a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.titulo }}</a>
+              </div>
+
+              <div class="kb-meta">
+                <div>👤 {{ t.responsavel or "Sem responsável" }}</div>
+                <div class="muted">⏰ {{ t.data_limite or "-" }}</div>
+              </div>
+            </div>
+          {% endfor %}
+          {% if col["cards"]|length == 0 %}
+            <div class="kb-empty muted">Sem cards</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<script>
+  const board = document.getElementById("board");
+  let dragged = null;
+
+  function setDraggingStyles(el, on) {
+    if(!el) return;
+    if(on) el.classList.add("dragging");
+    else el.classList.remove("dragging");
+  }
+
+  board.addEventListener("dragstart", (e) => {
+    const card = e.target.closest(".kb-card");
+    if(!card) return;
+    dragged = card;
+    e.dataTransfer.setData("text/plain", card.dataset.id);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggingStyles(card, true);
+  });
+
+  board.addEventListener("dragend", () => {
+    setDraggingStyles(dragged, false);
+    dragged = null;
+  });
+
+  board.addEventListener("dragover", (e) => {
+    const zone = e.target.closest(".kanban-dropzone");
+    if(!zone) return;
+    e.preventDefault();
+    zone.classList.add("over");
+  });
+
+  board.addEventListener("dragleave", (e) => {
+    const zone = e.target.closest(".kanban-dropzone");
+    if(!zone) return;
+    zone.classList.remove("over");
+  });
+
+  async function updateStatus(ticketId, newStatus){
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+    const res = await fetch(`/api/tickets/${ticketId}/status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken,
+      },
+      body: JSON.stringify({status: newStatus})
+    });
+    if(!res.ok){
+      const txt = await res.text();
+      throw new Error(txt || "Falha ao atualizar status");
+    }
+    return res.json();
+  }
+
+  board.addEventListener("drop", async (e) => {
+    const zone = e.target.closest(".kanban-dropzone");
+    if(!zone) return;
+    e.preventDefault();
+    zone.classList.remove("over");
+
+    const ticketId = e.dataTransfer.getData("text/plain");
+    const newStatus = zone.dataset.status;
+
+    if(!ticketId || !newStatus || !dragged) return;
+
+    const oldStatus = dragged.dataset.status;
+    if(oldStatus === newStatus) {
+      zone.appendChild(dragged);
+      return;
+    }
+
+    // Move in UI first for snappy feel
+    zone.appendChild(dragged);
+
+    try{
+      await updateStatus(ticketId, newStatus);
+      dragged.dataset.status = newStatus;
+      location.reload();
+    }catch(err){
+      alert("Não foi possível salvar o novo status. " + err.message);
+      // revert
+      const oldZone = board.querySelector(`.kanban-dropzone[data-status="${oldStatus}"]`);
+      if(oldZone) oldZone.appendChild(dragged);
+      dragged.dataset.status = oldStatus;
+    }
+  });
+</script>
+{% endblock %}

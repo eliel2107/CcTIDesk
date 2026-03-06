@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <h1>Ativos</h1>
+      <div class="muted">Gerencie equipamentos e vincule aos chamados.</div>
+    </div>
+    {% if g.user["role"] in ["admin", "operador"] %}
+      <a class="btn" href="{{ url_for('assets_admin.new_asset') }}">+ Novo ativo</a>
+    {% endif %}
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-title">Total</div><div class="kpi-value">{{ stats.total }}</div></div>
+    {% for k,v in stats.by_status.items() %}
+      <div class="kpi"><div class="kpi-title">{{ k }}</div><div class="kpi-value">{{ v }}</div></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <form method="get" class="filters">
+    <div class="grid">
+      <label>Busca
+        <input name="q" value="{{ filters.q }}" placeholder="tag / modelo / serial / base / responsável">
+      </label>
+      <label>Status
+        <select name="status">
+          <option value="">(todos)</option>
+          {% for s in ASSET_STATUSES %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Tipo
+        <select name="tipo">
+          <option value="">(todos)</option>
+          {% for t in ASSET_TYPES %}<option value="{{ t }}" {% if filters.tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Filtrar</button>
+      <a class="btn secondary" href="{{ url_for('assets_admin.assets') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <div class="ticket-grid">
+    {% if assets|length == 0 %}
+      <div class="muted">Nenhum ativo encontrado.</div>
+    {% endif %}
+    {% for a in assets %}
+      <div class="ticket-card">
+        <div class="ticket-header">
+          <div>
+            <div class="ticket-id">#{{ a.id }} • {{ a.tag }}</div>
+            <div class="ticket-meta">
+              <span class="pill">{{ a.tipo }}</span>
+              <span class="pill">{{ a.status }}</span>
+            </div>
+          </div>
+        </div>
+        <h3 class="ticket-title"><a href="{{ url_for('assets_admin.asset_detail', asset_id=a.id) }}">{{ a.modelo }}</a></h3>
+        <div class="ticket-info">
+          <div>🏷 Serial: <strong>{{ a.serial_number or "-" }}</strong></div>
+          <div class="muted">📍 {{ a.local_base or "-" }}</div>
+          <div class="muted">👤 {{ a.responsavel or "-" }}</div>
+          <div class="muted">Atualizado: {{ a.atualizado_em }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

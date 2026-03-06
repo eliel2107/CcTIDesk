@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-card">
+  <div class="hero-copy">
+    <div class="eyebrow">Painel executivo</div>
+    <h1>Gestão rápida de chamados, envios e ativos</h1>
+    <p class="muted">Visão central para acompanhar operação, localizar demandas críticas e agir com poucos cliques.</p>
+    <div class="hero-actions">
+      <a class="btn" href="{{ url_for('routes.dashboard') }}">Abrir Dashboard</a>
+      <a class="btn secondary" href="{{ url_for('routes.kanban') }}">Abrir Kanban</a>
+      <a class="btn ghost" href="{{ url_for('routes.global_search') }}">Busca global</a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="exec-kpi">
+      <div class="exec-label">Chamados em aberto</div>
+      <div class="exec-value">{{ open_count }}</div>
+    </div>
+    <div class="exec-kpi danger">
+      <div class="exec-label">Atrasados</div>
+      <div class="exec-value">{{ overdue_count }}</div>
+    </div>
+    <div class="exec-kpi">
+      <div class="exec-label">Ativos cadastrados</div>
+      <div class="exec-value">{{ asset_total }}</div>
+    </div>
+  </div>
+</section>
+
+<section class="quick-grid">
+  <a class="quick-card" href="{{ url_for('routes.index') }}">
+    <div class="quick-title">Lista de chamados</div>
+    <div class="muted">Cards com filtros rápidos</div>
+  </a>
+  <a class="quick-card" href="{{ url_for('routes.kanban') }}">
+    <div class="quick-title">Kanban</div>
+    <div class="muted">Mover e priorizar demandas</div>
+  </a>
+  <a class="quick-card" href="{{ url_for('assets_admin.assets') }}">
+    <div class="quick-title">Ativos</div>
+    <div class="muted">Controle de parque e vínculo com tickets</div>
+  </a>
+  <a class="quick-card" href="{{ url_for('assets_admin.assets_dashboard') }}">
+    <div class="quick-title">Dashboard de ativos</div>
+    <div class="muted">Tipos, status e visão consolidada</div>
+  </a>
+</section>
+
+<section class="card">
+  <h2>Atenção imediata</h2>
+  <div class="premium-alerts">
+    <div class="premium-alert danger-soft">
+      <div class="premium-alert-title">Chamados atrasados</div>
+      <div class="premium-alert-value">{{ overdue_count }}</div>
+      <div class="muted">Demandas com data limite vencida</div>
+    </div>
+    <div class="premium-alert warn-soft">
+      <div class="premium-alert-title">Ativos em trânsito</div>
+      <div class="premium-alert-value">{{ assets_in_transit }}</div>
+      <div class="muted">Equipamentos ainda em movimentação</div>
+    </div>
+    <div class="premium-alert">
+      <div class="premium-alert-title">Ativos sem responsável</div>
+      <div class="premium-alert-value">{{ assets_without_owner }}</div>
+      <div class="muted">Itens que precisam de dono definido</div>
+    </div>
+  </div>
+</section>
+{% endblock %}
