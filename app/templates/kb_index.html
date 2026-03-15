@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div><div class="eyebrow">Conhecimento</div><h1>Base de Conhecimento</h1>
+    <div class="muted">Soluções documentadas pelos operadores.</div></div>
+    {% if g.user and g.user.role in ('admin','operador') %}
+    <div class="actions"><a class="btn" href="{{ url_for('kb.kb_new') }}">+ Novo artigo</a></div>
+    {% endif %}
+  </div>
+  <form method="get" class="form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
+    <label style="flex:2;min-width:180px;">Buscar <input name="q" value="{{ q }}" placeholder="título, palavra-chave..."></label>
+    <label style="flex:1;min-width:160px;">Categoria
+      <select name="categoria_id">
+        <option value="">Todas</option>
+        {% for c in categories %}<option value="{{ c.id }}" {% if cat_id==c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+      </select>
+    </label>
+    <div><button class="btn" type="submit">Buscar</button> <a class="btn secondary" href="{{ url_for('kb.kb_index') }}">Limpar</a></div>
+  </form>
+</section>
+
+{% if articles|length == 0 %}
+<section class="card"><div class="muted" style="padding:20px;text-align:center;">Nenhum artigo encontrado.</div></section>
+{% endif %}
+
+{% for art in articles %}
+<section class="card" style="border-left:4px solid {{ art.categoria_cor or '#6366f1' }};">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+    <div style="flex:1;">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+        {% if art.categoria_nome %}<span class="pill" style="background:{{ art.categoria_cor }};color:#fff;font-size:.72rem;">{{ art.categoria_nome }}</span>{% endif %}
+        {% if not art.publico %}<span class="pill" style="font-size:.72rem;background:#6b7280;color:#fff;">Interno</span>{% endif %}
+        <span class="muted" style="font-size:.78rem;">👁 {{ art.visualizacoes }}</span>
+      </div>
+      <h3 style="margin:0 0 4px;"><a href="{{ url_for('kb.kb_article', article_id=art.id) }}">{{ art.titulo }}</a></h3>
+      <div class="muted" style="font-size:.82rem;">{{ art.conteudo[:120] }}{% if art.conteudo|length > 120 %}…{% endif %}</div>
+    </div>
+    {% if g.user and g.user.role in ('admin','operador') %}
+    <a class="btn secondary" href="{{ url_for('kb.kb_edit', article_id=art.id) }}" style="font-size:.8rem;padding:4px 10px;">Editar</a>
+    {% endif %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

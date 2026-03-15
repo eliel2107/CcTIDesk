@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width:720px;">
+  <div class="detail-head" style="margin-bottom:20px;">
+    <div>
+      <h1>{% if produto %}Editar produto{% else %}Novo produto no estoque{% endif %}</h1>
+      <div class="muted">Itens controlados por quantidade (consumíveis, materiais, acessórios).</div>
+    </div>
+    <a class="btn secondary" href="{{ url_for('stock.stock_home') }}">← Voltar</a>
+  </div>
+
+  <form method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <label class="span-2">Nome do produto *
+        <input name="nome" value="{{ produto.nome if produto else '' }}" required placeholder="ex: Mouse USB sem fio, Cabo HDMI 2m…">
+      </label>
+
+      <label>Categoria
+        <select name="categoria">
+          {% for c in CATEGORIAS %}
+            <option value="{{ c }}" {% if produto and produto.categoria == c %}selected{% endif %}>{{ CATEGORIAS_LABEL[c] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Unidade de medida
+        <select name="unidade">
+          {% for u in UNIDADES %}
+            <option value="{{ u }}" {% if produto and produto.unidade == u %}selected{% endif %}>{{ u }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Localização / Armário
+        <input name="localizacao" value="{{ produto.localizacao if produto else '' }}" placeholder="ex: Armário TI – Prateleira 2">
+      </label>
+
+      <label>Qtd. mínima para alerta
+        <input type="number" name="quantidade_minima" min="0" value="{{ produto.quantidade_minima if produto else 0 }}" placeholder="0 = sem alerta">
+      </label>
+
+      {% if not produto %}
+      <label>Quantidade inicial em estoque
+        <input type="number" name="quantidade_inicial" min="0" value="0">
+      </label>
+      {% endif %}
+
+      <label class="span-2">Descrição / Observações
+        <textarea name="descricao" rows="3" placeholder="Marca, modelo, referência de compra…">{{ produto.descricao if produto else '' }}</textarea>
+      </label>
+
+      {% if produto %}
+      <label style="flex-direction:row;align-items:center;gap:8px;margin-bottom:0;">
+        <input type="checkbox" name="ativo" value="1" {% if produto.ativo %}checked{% endif %}>
+        Produto ativo (visível no estoque)
+      </label>
+      {% endif %}
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="submit">{% if produto %}Salvar alterações{% else %}Criar produto{% endif %}</button>
+      <a class="btn secondary" href="{{ url_for('stock.stock_home') }}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

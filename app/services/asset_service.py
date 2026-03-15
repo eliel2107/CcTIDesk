@@ -143,3 +143,12 @@ def asset_dashboard():
     by_status = {r["status"]: r["total"] for r in db.execute("SELECT status, COUNT(*) as total FROM assets GROUP BY status").fetchall()}
     by_tipo = {r["tipo"]: r["total"] for r in db.execute("SELECT tipo, COUNT(*) as total FROM assets GROUP BY tipo").fetchall()}
     return {"total": total, "by_status": by_status, "by_tipo": by_tipo}
+
+def delete_asset(asset_id: int):
+    db = get_db()
+    # Desvincular chamados antes de deletar
+    db.execute("UPDATE tickets SET asset_id=NULL WHERE asset_id=?", (asset_id,))
+    db.execute("DELETE FROM asset_history WHERE asset_id=?", (asset_id,))
+    db.execute("DELETE FROM entradas_nf_assets WHERE asset_id=?", (asset_id,))
+    db.execute("DELETE FROM assets WHERE id=?", (asset_id,))
+    db.commit()

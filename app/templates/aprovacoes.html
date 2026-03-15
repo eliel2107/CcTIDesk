@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div><div class="eyebrow">Admin</div><h1>Aprovações pendentes</h1>
+    <div class="muted">{{ tickets|length }} chamado(s) aguardando sua aprovação.</div></div>
+  </div>
+</section>
+
+{% if tickets|length == 0 %}
+<section class="card"><div class="muted" style="padding:24px;text-align:center;">✅ Nenhum chamado aguardando aprovação.</div></section>
+{% endif %}
+
+{% for t in tickets %}
+<section class="card" style="border-left:4px solid var(--warning,#f59e0b);">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+        <span class="pill">{{ t.classificacao or 'REQ' }}</span>
+        <span class="pill">{{ t.prioridade }}</span>
+        {% if t.categoria_nome %}<span class="pill" style="background:{{ t.categoria_cor }};color:#fff;">{{ t.categoria_nome }}</span>{% endif %}
+      </div>
+      <h3 style="margin:0 0 4px;">
+        <a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.numero_chamado or ('#' + t.id|string) }} — {{ t.titulo }}</a>
+      </h3>
+      <div class="muted" style="font-size:.85rem;">
+        Solicitante: <strong>{{ t.solicitante or '—' }}</strong> &nbsp;•&nbsp;
+        Aberto em: {{ t.criado_em[:16] }}
+        {% if t.valor_estimado %}&nbsp;•&nbsp; Valor: <strong>R$ {{ "%.2f"|format(t.valor_estimado) }}</strong>{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+      <form method="post" action="{{ url_for('routes.aprovar_ticket_route', ticket_id=t.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" style="background:#22c55e;color:#000;" onclick="return confirm('Aprovar este chamado?')">✔ Aprovar</button>
+      </form>
+      <form method="post" action="{{ url_for('routes.reprovar_ticket_route', ticket_id=t.id) }}" style="display:flex;gap:6px;align-items:center;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input name="motivo" placeholder="Motivo (opcional)" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:inherit;font-size:.85rem;width:180px;">
+        <button class="btn secondary" onclick="return confirm('Reprovar este chamado?')">✖ Reprovar</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div><div class="eyebrow">Admin</div><h1>Chamados Recorrentes</h1>
+    <div class="muted">Chamados criados automaticamente conforme agendamento.</div></div>
+  </div>
+</section>
+
+{% for s in schedules %}
+<section class="card" style="border-left:4px solid {% if s.ativo %}#22c55e{% else %}#6b7280{% endif %};">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <strong>{{ s.titulo }}</strong>
+        <span class="pill" style="font-size:.7rem;background:{% if s.ativo %}#22c55e{% else %}#6b7280{% endif %};color:#000;">{% if s.ativo %}ativo{% else %}inativo{% endif %}</span>
+        <span class="pill" style="font-size:.7rem;">{{ s.frequencia }}</span>
+      </div>
+      <div class="muted" style="font-size:.82rem;">
+        {% if s.frequencia == 'mensal' %}Todo dia {{ s.dia_execucao or 1 }}{% elif s.frequencia == 'semanal' %}Toda {{ ['seg','ter','qua','qui','sex','sáb','dom'][s.dia_execucao or 0] }}{% else %}Diariamente{% endif %}
+        às {{ s.hora_execucao }}
+        {% if s.ultima_execucao %} · Última execução: {{ s.ultima_execucao[:16] }}{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <form method="post" action="{{ url_for('routes.recurring_toggle', rid=s.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn secondary" type="submit" style="font-size:.8rem;">{% if s.ativo %}Pausar{% else %}Ativar{% endif %}</button>
+      </form>
+      <form method="post" action="{{ url_for('routes.recurring_delete', rid=s.id) }}" onsubmit="return confirm('Excluir agendamento?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn secondary" type="submit" style="font-size:.8rem;color:#ef4444;">Excluir</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endfor %}
+
+{% if schedules|length == 0 %}
+<section class="card"><div class="muted" style="padding:20px;text-align:center;">Nenhum agendamento configurado.</div></section>
+{% endif %}
+
+<section class="card">
+  <h2>Novo agendamento</h2>
+  <form method="post" action="{{ url_for('routes.recurring_create') }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+      <label class="span-2">Título do chamado <input name="titulo" required placeholder="Ex: Backup mensal de servidores"></label>
+      <label>Frequência
+        <select name="frequencia" onchange="updateDiaLabel(this)">
+          <option value="diario">Diário</option>
+          <option value="semanal">Semanal</option>
+          <option value="mensal" selected>Mensal</option>
+        </select>
+      </label>
+      <label id="dia-label">Dia do mês
+        <input name="dia_execucao" type="number" min="1" max="31" value="1">
+      </label>
+      <label>Horário <input name="hora_execucao" type="time" value="08:00"></label>
+      <label>Prioridade
+        <select name="prioridade">
+          {% for p in PRIORITIES %}<option value="{{ p }}" {% if p=='MEDIA' %}selected{% endif %}>{{ p }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Categoria
+        <select name="categoria_id">
+          <option value="">Nenhuma</option>
+          {% for c in categories %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="span-2">Descrição <textarea name="descricao" rows="2" style="resize:vertical;"></textarea></label>
+    </div>
+    <div class="actions"><button class="btn" type="submit">Criar agendamento</button></div>
+  </form>
+</section>
+<script>
+function updateDiaLabel(sel) {
+  const label = document.getElementById('dia-label');
+  const input = label.querySelector('input');
+  if (sel.value === 'semanal') { label.firstChild.textContent = 'Dia da semana (0=Seg)'; input.max=6; }
+  else if (sel.value === 'diario') { label.style.display='none'; }
+  else { label.firstChild.textContent = 'Dia do mês'; input.max=31; label.style.display=''; }
+}
+</script>
+{% endblock %}

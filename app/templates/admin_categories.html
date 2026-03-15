@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Categorias de chamado</h1>
+  <div class="muted">Configure as categorias disponíveis para abertura de chamados, triagem automática e quais campos aparecem no formulário.</div>
+</section>
+
+{% set ALL_CAMPOS = [
+  ("solicitante", "Solicitante"),
+  ("responsavel", "Responsável"),
+  ("asset", "Ativo vinculado"),
+  ("data_limite", "Data limite"),
+  ("descricao", "Descrição"),
+  ("fornecedor", "Fornecedor"),
+  ("centro_custo", "Centro de custo"),
+  ("valor_estimado", "Valor estimado"),
+  ("codigo_rastreio", "Código de rastreio"),
+  ("link_pedido", "Link do pedido"),
+  ("entrega", "Destinatário / Endereço / Entrega"),
+] %}
+
+<section class="card">
+  <h2>Nova categoria</h2>
+  <form method="post" action="{{ url_for('admin.create_category_route') }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <label>Nome
+        <input name="nome" required placeholder="Ex: Infraestrutura, Sistemas, Redes...">
+      </label>
+      <label>Cor
+        <input name="cor" type="color" value="#6366f1" style="height:38px;padding:2px 4px;">
+      </label>
+      <label class="span-2">Descrição
+        <input name="descricao" placeholder="Breve descrição do escopo desta categoria (opcional)">
+      </label>
+      <label>SLA (horas)
+        <input name="sla_horas" type="number" min="1" placeholder="Ex: 8 (8 horas)">
+      </label>
+      <label>Valor mínimo para aprovação (R$)
+        <input name="valor_aprovacao_limite" type="number" step="0.01" min="0" placeholder="Ex: 500.00">
+      </label>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:normal;margin-bottom:12px;">
+      <input type="checkbox" name="requer_aprovacao" value="1"> Requer aprovação de admin antes de entrar na fila
+    </label>
+    <label class="span-2" style="display:block;margin-bottom:12px;">Template de descrição (pré-preenchido para o solicitante)
+      <textarea name="template_descricao" rows="2" placeholder="Ex: Descreva o equipamento, motivo, urgência..." style="resize:vertical;"></textarea>
+    </label>
+    <label class="span-2" style="display:block;margin-bottom:12px;">Checklist padrão (uma etapa por linha)
+      <textarea name="checklist_padrao" rows="3" placeholder="Verificar estoque&#10;Solicitar cotação&#10;Aguardar aprovação fiscal" style="resize:vertical;font-family:monospace;"></textarea>
+    </label>
+
+    <div class="field-chip-panel" data-field-chip-group>
+      <div class="field-chip-toolbar">
+        <div class="muted" style="font-size:.85rem;">📋 Campos visíveis no formulário de abertura (deixe todos desmarcados para exibir tudo):</div>
+        <div class="field-chip-actions">
+          <button type="button" class="chip-action-btn" data-chip-action="check-all">Marcar todos</button>
+          <button type="button" class="chip-action-btn" data-chip-action="clear-all">Limpar</button>
+        </div>
+      </div>
+      <div class="field-chip-list">
+        {% for key, label in ALL_CAMPOS %}
+        <div class="field-chip">
+          <input
+            class="field-chip-input"
+            id="new-campo-{{ key }}"
+            type="checkbox"
+            name="campos_visiveis"
+            value="{{ key }}"
+            checked
+          >
+          <label class="field-chip-label" for="new-campo-{{ key }}">{{ label }}</label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="actions"><button class="btn" type="submit">Criar categoria</button></div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Lista de categorias</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Cor</th><th>Nome</th><th>Descrição</th><th>Campos visíveis</th><th>Status</th><th>Criado em</th><th>Ações</th></tr>
+      </thead>
+      <tbody>
+        {% if categories|length == 0 %}
+          <tr><td colspan="7" class="muted">Nenhuma categoria cadastrada.</td></tr>
+        {% endif %}
+        {% for cat in categories %}
+        {% set cat_campos = (cat.campos_visiveis | from_json) if cat.campos_visiveis else [] %}
+        <tr>
+          <td><span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:{{ cat.cor }};vertical-align:middle;"></span></td>
+          <td><strong>{{ cat.nome }}</strong></td>
+          <td class="muted">{{ cat.descricao or "—" }}</td>
+          <td>
+            {% if not cat_campos %}
+              <span class="muted" style="font-size:.8rem;">Todos</span>
+            {% else %}
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              {% for key, label in ALL_CAMPOS %}
+                {% if key in cat_campos %}
+                  <span class="pill" style="font-size:.75rem;padding:2px 7px;">{{ label }}</span>
+                {% endif %}
+              {% endfor %}
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            {% if cat.ativo %}<span class="pill">ATIVA</span>{% else %}<span class="pill" style="opacity:.5">INATIVA</span>{% endif %}
+          </td>
+          <td>{{ cat.criado_em[:10] }}</td>
+          <td>
+            <details>
+              <summary class="mini">Editar</summary>
+              <form method="post" action="{{ url_for('admin.edit_category_route', category_id=cat.id) }}" class="form" style="margin-top:8px">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label>Nome <input name="nome" value="{{ cat.nome }}" required></label>
+                <label>Descrição <input name="descricao" value="{{ cat.descricao or '' }}"></label>
+                <label>Cor <input name="cor" type="color" value="{{ cat.cor }}" style="height:34px;padding:2px 4px;"></label>
+                <label><input type="checkbox" name="ativo" {% if cat.ativo %}checked{% endif %}> Ativa</label>
+
+                <div class="field-chip-panel" data-field-chip-group>
+                  <div class="field-chip-toolbar">
+                    <div class="muted" style="font-size:.85rem;">📋 Campos visíveis no formulário:</div>
+                    <div class="field-chip-actions">
+                      <button type="button" class="chip-action-btn" data-chip-action="check-all">Marcar todos</button>
+                      <button type="button" class="chip-action-btn" data-chip-action="clear-all">Limpar</button>
+                    </div>
+                  </div>
+                  <div class="field-chip-list">
+                    {% for key, label in ALL_CAMPOS %}
+                    <div class="field-chip">
+                      <input
+                        class="field-chip-input"
+                        id="edit-{{ cat.id }}-campo-{{ key }}"
+                        type="checkbox"
+                        name="campos_visiveis"
+                        value="{{ key }}"
+                        {% if not cat_campos or key in cat_campos %}checked{% endif %}
+                      >
+                      <label class="field-chip-label" for="edit-{{ cat.id }}-campo-{{ key }}">{{ label }}</label>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <div class="actions"><button class="btn secondary" type="submit">Salvar</button></div>
+              </form>
+            </details>
+            <form method="post" action="{{ url_for('admin.delete_category_route', category_id=cat.id) }}"
+                  style="margin-top:6px"
+                  onsubmit="return confirm('Excluir categoria {{ cat.nome }}? Os chamados vinculados ficarão sem categoria.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="mini danger" type="submit">🗑 Excluir</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="muted" style="margin-top:12px">
+    💡 Após criar as categorias, acesse <a href="{{ url_for('admin.users') }}">Usuários</a> para definir quais categorias cada operador pode atender.
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/category-field-chips.js') }}"></script>
+{% endblock %}

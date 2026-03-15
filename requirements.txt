@@ -7,3 +7,5 @@ reportlab==4.2.2
 Flask-WTF==1.2.1
 flask-limiter==3.8.0
 pytest==8.3.3
+apscheduler==3.10.4
+sentry-sdk[flask]==2.16.0

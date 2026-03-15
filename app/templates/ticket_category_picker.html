@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Novo chamado</h1>
+  <div class="muted">Selecione a classificação e a categoria do chamado para prosseguir.</div>
+</section>
+
+<section class="card">
+  <h2 style="margin-bottom:12px;">1. Classificação</h2>
+  <div style="display:flex;gap:14px;margin-bottom:28px;" id="classif-group">
+    <label class="classif-card selected" data-val="REQUISICAO">
+      <input type="radio" name="classif" value="REQUISICAO" checked style="display:none;">
+      <div class="classif-badge req">REQ</div>
+      <div class="classif-label">Requisição</div>
+      <div class="classif-hint">Solicitação de serviço, compra ou entrega</div>
+    </label>
+    <label class="classif-card" data-val="INCIDENTE">
+      <input type="radio" name="classif" value="INCIDENTE" style="display:none;">
+      <div class="classif-badge inc">INC</div>
+      <div class="classif-label">Incidente</div>
+      <div class="classif-hint">Falha, interrupção ou problema urgente</div>
+    </label>
+  </div>
+
+  <h2 style="margin-bottom:12px;">2. Categoria</h2>
+  {% if not categories %}
+    <div class="muted">Nenhuma categoria ativa. Peça ao administrador para cadastrar categorias.</div>
+  {% else %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+    {% for cat in categories %}
+    <a href="#" class="cat-link" data-url="{{ next_url }}?cat={{ cat.id }}&classif=REQUISICAO" style="text-decoration:none;">
+      <div class="category-card" style="--cat-color:{{ cat.cor }}">
+        <div class="category-card__dot"></div>
+        <div class="category-card__name">{{ cat.nome }}</div>
+        {% if cat.descricao %}
+        <div class="category-card__desc">{{ cat.descricao }}</div>
+        {% endif %}
+        <div class="category-card__arrow">→</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+
+<style>
+.classif-card {
+  border: 2px solid var(--border, #2a3042);
+  border-radius: 10px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  min-width: 180px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.classif-card.selected { border-color: var(--accent, #6366f1); background: rgba(99,102,241,.08); }
+.classif-badge { font-size:.75rem; font-weight:800; letter-spacing:.06em; border-radius:5px; padding:2px 8px; display:inline-block; width:fit-content; }
+.classif-badge.req { background:#3b82f6; color:#fff; }
+.classif-badge.inc { background:#ef4444; color:#fff; }
+.classif-label { font-weight:700; font-size:.95rem; margin-top:4px; }
+.classif-hint { font-size:.8rem; color:var(--muted,#8892a4); }
+.category-card {
+  background: var(--surface, #1e2130);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 20px 18px 16px;
+  cursor: pointer;
+  transition: border-color .15s, transform .12s, box-shadow .15s;
+  position: relative;
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 110px;
+}
+.category-card:hover { border-color: var(--cat-color); transform: translateY(-2px); box-shadow: 0 4px 18px rgba(0,0,0,.25); }
+.category-card__dot { width:14px; height:14px; border-radius:50%; background:var(--cat-color); margin-bottom:2px; }
+.category-card__name { font-weight:700; font-size:1rem; color:var(--text,#e2e8f0); }
+.category-card__desc { font-size:.82rem; color:var(--muted,#8892a4); line-height:1.35; }
+.category-card__arrow { position:absolute; bottom:14px; right:16px; font-size:1.1rem; color:var(--cat-color); opacity:0; transition:opacity .15s; }
+.category-card:hover .category-card__arrow { opacity:1; }
+</style>
+
+<script>
+const cards = document.querySelectorAll(".classif-card");
+let currentClassif = "REQUISICAO";
+
+cards.forEach(card => {
+  card.addEventListener("click", () => {
+    cards.forEach(c => c.classList.remove("selected"));
+    card.classList.add("selected");
+    currentClassif = card.dataset.val;
+    updateCatLinks();
+  });
+});
+
+function updateCatLinks() {
+  document.querySelectorAll(".cat-link").forEach(a => {
+    const base = a.dataset.url.split("&classif=")[0];
+    a.href = base + "&classif=" + currentClassif;
+  });
+}
+</script>
+{% endblock %}

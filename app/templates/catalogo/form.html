@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width:640px;">
+  <div class="detail-head" style="margin-bottom:20px;">
+    <div>
+      <h1>{% if produto %}Editar produto{% else %}Novo produto no catálogo{% endif %}</h1>
+      <div class="muted">Produtos cadastrados ficam disponíveis para seleção rápida nas NFs.</div>
+    </div>
+    <a class="btn secondary" href="{{ url_for('catalogo.catalogo_list') }}">← Voltar</a>
+  </div>
+
+  <form method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+
+      <label class="span-2">Nome do produto *
+        <input name="nome" value="{{ produto.nome if produto else '' }}" required
+               placeholder="ex: Dell Latitude 5440, Cabo HDMI 2m, Samsung Galaxy A52…">
+      </label>
+
+      <label>Tipo *
+        <select name="tipo_item" id="tipoSel" onchange="updPrefixo()" required>
+          <option value="">(selecionar)</option>
+          <optgroup label="Ativos (rastreados por tag)">
+            {% for t in TIPOS_ATIVO %}
+              <option value="{{ t }}" {% if produto and produto.tipo_item == t %}selected{% endif %}>{{ TIPO_LABEL.get(t,t) }}</option>
+            {% endfor %}
+          </optgroup>
+          <optgroup label="Consumíveis / Estoque">
+            {% for t in TODOS_TIPOS if t not in TIPOS_ATIVO %}
+              <option value="{{ t }}" {% if produto and produto.tipo_item == t %}selected{% endif %}>{{ TIPO_LABEL.get(t,t) }}</option>
+            {% endfor %}
+          </optgroup>
+        </select>
+      </label>
+
+      <label>Código Oracle
+        <input name="codigo_oracle" value="{{ produto.codigo_oracle if produto else '' }}"
+               placeholder="ex: 12345678">
+      </label>
+
+      <label>Valor unitário (R$)
+        <input name="valor_unitario" type="text" inputmode="decimal"
+               value="{{ '%.2f'|format(produto.valor_unitario) if produto and produto.valor_unitario else '' }}"
+               placeholder="ex: 3499,90">
+      </label>
+
+      <label>Unidade
+        <select name="unidade">
+          {% for u in ['unidade','caixa','par','pacote','rolo','metro','litro'] %}
+            <option value="{{ u }}" {% if produto and produto.unidade == u %}selected{% endif %}>{{ u }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label id="fPrefixo" class="span-2">Prefixo padrão da tag
+        <input name="prefixo_tag" id="prefixoInput"
+               value="{{ produto.prefixo_tag if produto else '' }}"
+               placeholder="ex: NB, CEL, MO — usado ao adicionar em NFs">
+      </label>
+
+      {% if produto %}
+      <label style="flex-direction:row;align-items:center;gap:8px;margin-bottom:0;">
+        <input type="checkbox" name="ativo" value="1" {% if produto.ativo %}checked{% endif %}>
+        Produto ativo (aparece na seleção de NFs)
+      </label>
+      {% endif %}
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="submit">{% if produto %}Salvar{% else %}Cadastrar no catálogo{% endif %}</button>
+      <a class="btn secondary" href="{{ url_for('catalogo.catalogo_list') }}">Cancelar</a>
+    </div>
+  </form>
+</section>
+
+<script>
+const PREF  = {NOTEBOOK:'NB',DESKTOP:'DK',MONITOR:'MO',CELULAR:'CEL',TABLET:'TAB'};
+const ATIVOS = new Set(['NOTEBOOK','DESKTOP','MONITOR','CELULAR','TABLET','OUTRO']);
+function updPrefixo(){
+  const tipo = document.getElementById('tipoSel').value;
+  const fp = document.getElementById('fPrefixo');
+  fp.style.display = ATIVOS.has(tipo) ? '' : 'none';
+  const pi = document.getElementById('prefixoInput');
+  if(ATIVOS.has(tipo) && PREF[tipo] && !pi.value) pi.placeholder = PREF[tipo];
+}
+updPrefixo();
+</script>
+{% endblock %}

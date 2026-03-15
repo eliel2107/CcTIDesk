@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block content %}
+
+{# ── KPIs ── #}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <h1>Estoque</h1>
+      <div class="muted">Consumíveis e materiais de apoio — controle por quantidade.</div>
+    </div>
+    {% if g.user["role"] in ["admin","operador"] %}
+      <a class="btn" href="{{ url_for('stock.novo_produto') }}">+ Novo produto</a>
+    {% endif %}
+  </div>
+
+  <div class="kpi-grid" style="margin-top:16px;">
+    <div class="kpi kpi-open">
+      <div class="kpi-title">Produtos ativos</div>
+      <div class="kpi-value">{{ dashboard.total }}</div>
+    </div>
+    <div class="kpi kpi-urgent">
+      <div class="kpi-title">Abaixo do mínimo</div>
+      <div class="kpi-value">{{ dashboard.alertas }}</div>
+    </div>
+    <div class="kpi kpi-overdue">
+      <div class="kpi-title">Zerados</div>
+      <div class="kpi-value">{{ dashboard.zerados }}</div>
+    </div>
+    <div class="kpi" style="border-color:rgba(15,203,122,.28)">
+      <div class="kpi-title">Categorias</div>
+      <div class="kpi-value" style="color:#34d399;">{{ dashboard.by_cat|length }}</div>
+    </div>
+  </div>
+</section>
+
+{# ── Alertas de mínimo ── #}
+{% if dashboard.alertas_list %}
+<section class="card" style="border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.04)">
+  <h2 style="color:var(--warn);margin-bottom:12px;">⚠️ Atenção — estoque baixo</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Produto</th><th>Categoria</th><th>Atual</th><th>Mínimo</th><th>Ação</th>
+      </tr></thead>
+      <tbody>
+        {% for p in dashboard.alertas_list %}
+        <tr>
+          <td><a href="{{ url_for('stock.produto_detail', pid=p.id) }}">{{ p.nome }}</a></td>
+          <td><span class="pill">{{ p.categoria }}</span></td>
+          <td style="color:{% if p.quantidade_atual==0 %}var(--bad){% else %}var(--warn){% endif %};font-weight:800;font-family:monospace;">
+            {{ p.quantidade_atual }} {{ p.unidade }}{% if p.quantidade_atual != 1 %}s{% endif %}
+          </td>
+          <td class="muted">{{ p.quantidade_minima }}</td>
+          <td><a class="btn secondary" href="{{ url_for('stock.produto_detail', pid=p.id) }}" style="padding:5px 10px;font-size:12px;">Repor</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{# ── Filtros + lista ── #}
+<div class="layout-premium">
+  <div>
+    <section class="card">
+      <form method="get" class="filters">
+        <div class="grid">
+          <label>Busca
+            <input name="q" value="{{ filtros.q }}" placeholder="nome / localização…">
+          </label>
+          <label>Categoria
+            <select name="categoria">
+              <option value="">(todas)</option>
+              {% for c in CATEGORIAS %}
+                <option value="{{ c }}" {% if filtros.categoria == c %}selected{% endif %}>{{ CATEGORIAS_LABEL[c] }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <div class="actions">
+          <button class="btn" type="submit">Filtrar</button>
+          <a class="btn secondary" href="{{ url_for('stock.stock_home') }}">Limpar</a>
+          <label style="display:inline-flex;flex-direction:row;align-items:center;gap:6px;margin:0;font-size:13px;cursor:pointer;">
+            <input type="checkbox" name="alerta" value="1" {% if filtros.alerta == '1' %}checked{% endif %} style="margin:0;">
+            Só alertas
+          </label>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top:0;">
+      {% if produtos|length == 0 %}
+        <div class="muted">Nenhum produto encontrado.</div>
+      {% endif %}
+      <div class="ticket-grid">
+        {% for p in produtos %}
+        {% set pct = [(p.quantidade_atual / p.quantidade_minima * 100)|int, 100]|min if p.quantidade_minima > 0 else 100 %}
+        <div class="ticket-card {% if p.alerta %}overdue{% endif %}">
+          <div class="ticket-header">
+            <div>
+              <div class="ticket-id">#{{ p.id }} · {{ p.categoria }}</div>
+              <div class="ticket-meta">
+                {% if p.alerta %}<span class="pill prio-urgent">⚠ Baixo</span>{% endif %}
+                <span class="pill">{{ p.unidade }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ticket-title">
+            <a href="{{ url_for('stock.produto_detail', pid=p.id) }}">{{ p.nome }}</a>
+          </div>
+
+          {# Barra de nível de estoque #}
+          {% if p.quantidade_minima > 0 %}
+          <div style="margin:2px 0 4px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;">
+              <span>Nível de estoque</span>
+              <span>mín. {{ p.quantidade_minima }}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:{{ [pct,100]|min }}%;background:{% if pct <= 25 %}linear-gradient(90deg,var(--bad),#ff7a7a){% elif pct <= 60 %}linear-gradient(90deg,var(--warn),#ffd080){% else %}linear-gradient(90deg,var(--ok),#5de8a5){% endif %}"></div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="ticket-info">
+            <div>Quantidade: <strong style="font-family:monospace;font-size:16px;color:{% if p.quantidade_atual == 0 %}var(--bad){% elif p.alerta %}var(--warn){% else %}var(--ok){% endif %}">{{ p.quantidade_atual }}</strong> {{ p.unidade }}{% if p.quantidade_atual != 1 %}s{% endif %}</div>
+            {% if p.localizacao %}<div class="muted">📍 {{ p.localizacao }}</div>{% endif %}
+          </div>
+
+          {% if g.user["role"] in ["admin","operador"] %}
+          <div class="ticket-actions">
+            <a class="btn" href="{{ url_for('stock.produto_detail', pid=p.id) }}" style="padding:6px 12px;font-size:12px;">Movimentar</a>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  {# ── Painel lateral: movimentações recentes ── #}
+  <div class="side-pane">
+    <div class="sticky-card">
+      <section class="card">
+        <h2 style="margin-bottom:14px;">Movimentações recentes</h2>
+        {% if movimentacoes|length == 0 %}
+          <div class="muted" style="font-size:13px;">Nenhuma ainda.</div>
+        {% endif %}
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          {% for m in movimentacoes %}
+          <div style="padding:10px 12px;border:1px solid var(--b1);border-radius:var(--r);background:var(--s2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:700;color:{% if m.tipo=='ENTRADA' %}var(--ok){% elif m.tipo=='SAIDA' %}var(--bad){% else %}var(--warn){% endif %}">
+                {% if m.tipo=='ENTRADA' %}↑ ENTRADA{% elif m.tipo=='SAIDA' %}↓ SAÍDA{% else %}⇄ AJUSTE{% endif %}
+              </span>
+              <span style="font-size:11px;font-family:monospace;color:var(--muted);">{{ m.criado_em[5:16] }}</span>
+            </div>
+            <div style="font-size:13px;font-weight:600;">{{ m.produto_nome }}</div>
+            <div style="font-size:12px;color:var(--muted);">
+              {{ m.quantidade }} {{ m.unidade }}{% if m.quantidade != 1 %}s{% endif %}
+              {% if m.ticket_titulo %} · <a href="{{ url_for('routes.ticket_detail', ticket_id=m.ticket_id) }}" style="font-size:11px;">{{ m.ticket_titulo[:28] }}…</a>{% endif %}
+            </div>
+            {% if m.motivo %}<div style="font-size:11px;color:var(--muted);margin-top:2px;">{{ m.motivo }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        {# Por categoria #}
+        {% if dashboard.by_cat %}
+        <hr class="sep" style="margin:16px 0;">
+        <h3>Por categoria</h3>
+        <div class="bars">
+          {% set max_cat = dashboard.by_cat[0].total_qtd or 1 %}
+          {% for c in dashboard.by_cat %}
+          <div class="bar-row" style="grid-template-columns:1fr 60px 44px;">
+            <div>
+              <div class="bar-label" style="margin-bottom:4px;">{{ CATEGORIAS_LABEL.get(c.categoria, c.categoria) }}</div>
+              <div class="bar-track"><div class="bar-fill" style="width:{{ [(c.total_qtd / max_cat * 100)|int, 100]|min }}%"></div></div>
+            </div>
+            <div class="bar-val" style="font-size:11px;text-align:right;">{{ c.total_qtd }} un.</div>
+            <div class="bar-val" style="font-size:11px;color:var(--muted);">{{ c.total }} prod.</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

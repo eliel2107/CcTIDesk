@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+
+{# Progresso #}
+<div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid var(--b1);max-width:900px;">
+  <div style="flex:1;padding:10px 14px;background:var(--s3);color:var(--fg2);font-size:12px;font-weight:800;text-align:center;">✓ Cabeçalho</div>
+  <div style="flex:1;padding:10px 14px;background:var(--s3);color:var(--fg2);font-size:12px;font-weight:800;text-align:center;">✓ Itens</div>
+  <div style="flex:1;padding:10px 14px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;text-align:center;">3 — Revisar & Confirmar</div>
+</div>
+
+<section class="card" style="max-width:900px;border-color:rgba(59,127,255,.25);">
+  <div class="detail-head" style="margin-bottom:16px;">
+    <div>
+      <div class="eyebrow">Revisão antes de confirmar</div>
+      <h1>NF {{ entrada.numero_nf }}</h1>
+      <div class="badges" style="margin-top:6px;">
+        {% if entrada.fornecedor %}<span class="pill">🏭 {{ entrada.fornecedor }}</span>{% endif %}
+        {% if entrada.numero_oc  %}<span class="pill">📋 OC {{ entrada.numero_oc }}</span>{% endif %}
+        {% if entrada.base_destino %}<span class="pill">📍 {{ entrada.base_destino }}</span>{% endif %}
+      </div>
+    </div>
+    <a class="btn secondary" href="{{ url_for('nf.nf_itens', eid=entrada.id) }}">← Voltar e editar</a>
+  </div>
+
+  <div style="padding:12px 16px;background:var(--warn-s);border:1px solid rgba(245,166,35,.28);border-radius:var(--r);margin-bottom:20px;font-size:13px;">
+    ⚠ Revise as tags e seriais abaixo. Você pode editar qualquer campo antes de confirmar. <strong>Após confirmação, os ativos são criados imediatamente.</strong>
+  </div>
+
+  <form method="post" action="{{ url_for('nf.nf_confirmar', eid=entrada.id) }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {# ── Ativos individuais ── #}
+    {% set ativos = preview|selectattr('is_ativo')|list %}
+    {% if ativos %}
+    <h2 style="margin-bottom:12px;">🖥 Ativos a criar ({{ ativos|length }} unidades)</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Edite tag, serial ou base de destino por unidade se necessário.</div>
+
+    <div class="table-wrap" style="margin-bottom:24px;">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Tipo</th><th>Modelo</th>
+          <th>Tag única <span style="color:var(--accent);font-weight:700;">(editável)</span></th>
+          <th>Nº de série</th>
+          <th>Base destino</th>
+        </tr></thead>
+        <tbody>
+          {% for row in ativos %}
+          <tr>
+            <td style="font-family:monospace;color:var(--muted);font-size:11px;">{{ loop.index }}</td>
+            <td><span class="pill pill-done" style="font-size:10px;">{{ TIPO_LABEL.get(row.tipo_item, row.tipo_item) }}</span></td>
+            <td style="font-weight:600;">{{ row.modelo }}</td>
+            <td>
+              <input name="tag_{{ row.item_id }}_{{ row.idx }}"
+                     value="{{ row.tag }}"
+                     style="min-height:36px;padding:6px 10px;font-family:monospace;font-weight:700;font-size:13px;width:130px;"
+                     required>
+            </td>
+            <td>
+              <input name="serial_{{ row.item_id }}_{{ row.idx }}"
+                     value="{{ row.serial }}"
+                     style="min-height:36px;padding:6px 10px;font-size:12px;width:160px;"
+                     placeholder="(deixar em branco)">
+            </td>
+            <td>
+              <input name="base_{{ row.item_id }}_{{ row.idx }}"
+                     value="{{ row.local_base }}"
+                     style="min-height:36px;padding:6px 10px;font-size:12px;width:150px;"
+                     placeholder="{{ entrada.base_destino or 'base' }}">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {# ── Consumíveis ── #}
+    {% set consumiveis = preview|rejectattr('is_ativo')|list %}
+    {% if consumiveis %}
+    <h2 style="margin-bottom:12px;">📦 Consumíveis / Estoque ({{ consumiveis|length }} produto(s))</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+      Estes itens serão somados ao saldo do estoque. Se o produto não existir, será criado automaticamente.
+    </div>
+    <div class="table-wrap" style="margin-bottom:24px;">
+      <table>
+        <thead><tr><th>Produto</th><th>Tipo</th><th>Quantidade</th></tr></thead>
+        <tbody>
+          {% for row in consumiveis %}
+          <tr>
+            <td style="font-weight:600;">{{ row.modelo }}</td>
+            <td><span class="pill pill-info" style="font-size:10px;">{{ TIPO_LABEL.get(row.tipo_item, row.tipo_item) }}</span></td>
+            <td style="font-family:monospace;font-weight:800;color:var(--ok);">+{{ row.quantidade }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <div class="actions" style="padding-top:8px;border-top:1px solid var(--b1);">
+      <button class="btn" type="submit"
+              onclick="return confirm('Confirmar a entrada? Isso criará todos os ativos e atualizará o estoque.')">
+        ✔ Confirmar entrada
+      </button>
+      <a class="btn secondary" href="{{ url_for('nf.nf_itens', eid=entrada.id) }}">← Voltar e editar</a>
+      <form method="post" action="{{ url_for('nf.nf_cancelar', eid=entrada.id) }}" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn ghost" type="submit"
+                onclick="return confirm('Cancelar esta NF?')" style="color:var(--bad);">Cancelar NF</button>
+      </form>
+    </div>
+  </form>
+</section>
+{% endblock %}

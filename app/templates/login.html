@@ -2,19 +2,27 @@
 {% block content %}
 <section class="auth-wrap">
   <div class="auth-card">
-    <h1>Entrar</h1>
-    <p class="muted">Faça login para acessar o sistema.</p>
-    <form method="post" class="form">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;">
+      <div style="width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);flex-shrink:0;"></div>
+      <span style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;">CCTI Service Desk</span>
+    </div>
+
+    <h1>Bem‑vindo de volta</h1>
+    <p class="muted">Faça login para acessar o painel operacional.</p>
+
+    <form method="post" class="form" style="margin-top:4px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>E-mail
-        <input type="email" name="email" placeholder="admin@local" required>
+        <input type="email" name="email" placeholder="admin@empresa.com" required autocomplete="email">
       </label>
       <label>Senha
-        <input type="password" name="password" placeholder="••••••••" required>
+        <input type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
       </label>
-      <button class="btn" type="submit">Entrar</button>
+      <button class="btn" type="submit" style="margin-top:4px;">Entrar no sistema →</button>
     </form>
-    <div class="muted auth-help">
+
+    <div class="auth-help">
       Primeiro acesso padrão:<br>
       <code>admin@local</code> / <code>admin123</code>
     </div>

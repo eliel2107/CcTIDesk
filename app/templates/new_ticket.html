@@ -1,126 +1,167 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="card">
-  <h1>Novo chamado</h1>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="{{ url_for('routes.new_ticket') }}" class="btn secondary" style="padding:6px 12px;">← Categoria</a>
+    <div>
+      <h1 style="margin:0;">Novo chamado</h1>
+      {% if selected_cat %}
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+        <span style="width:10px;height:10px;border-radius:50%;background:{{ selected_cat.cor }};display:inline-block;"></span>
+        <span class="muted" style="font-size:.9rem;">{{ selected_cat.nome }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
 
-  <form method="post" action="{{ url_for('routes.create_ticket_route') }}" class="form">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="grid">
-      <label>Tipo
-        <select name="tipo" required>
-          {% for t in TYPES %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
-        </select>
-      </label>
-
-      <label>Prioridade
-        <select name="prioridade" required>
-          {% for p in PRIORITIES %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
-        </select>
-      </label>
-
-      <label class="span-2">Título
-        <input name="titulo" required placeholder="ex: Compra de headset / Envio de notebook" />
-      </label>
-
-      <label>Solicitante <input name="solicitante" placeholder="ex: TI / Patrimônio / Nome" /></label>
-      <label>Responsável <input name="responsavel" placeholder="ex: Eliel / Iago" /></label>
-
-      <label>Fornecedor <input name="fornecedor" placeholder="ex: Kabum / Amazon / Fornecedor X" /></label>
-      <label>Centro de custo <input name="centro_custo" placeholder="ex: TI-001" /></label>
-
-      <label>Valor estimado (R$) <input name="valor_estimado" placeholder="ex: 249,90" /></label>
-      <label>Código de rastreio <input name="codigo_rastreio" placeholder="ex: BR123..." /></label>
-
-      <label class="span-2">Link do pedido <input name="link_pedido" placeholder="ex: link interno / pedido / cotação" /></label>
-
-      <label>Data limite (YYYY-MM-DD) <input name="data_limite" placeholder="ex: 2026-03-15" /></label>
-      <label>Ativo vinculado
-        <select name="asset_id">
-          <option value="">(nenhum)</option>
-          {% for a in assets %}<option value="{{ a.id }}">#{{ a.id }} • {{ a.tag }} • {{ a.modelo }}</option>{% endfor %}
-        </select>
-      </label>
-
-      <label class="span-2">Descrição
-        <textarea name="descricao" rows="4" placeholder="Detalhe: item, quantidade, endereço, justificativa..."></textarea>
-      </label>
-
-      <div class="span-2 divider">Dados de entrega (útil para ENVIO)</div>
-<div class="span-2">
-  <label>Preencher endereço por base/local (opcional)
-    <select id="presetSelect">
-      <option value="">(selecionar)</option>
-    </select>
-  </label>
-  <div class="muted" id="presetObs" style="margin-top:6px"></div>
-  <div class="muted" id="senderBox" style="margin-top:8px"></div>
-</div>
+{% set campos = campos_visiveis or [] %}
+{% set show_all = campos | length == 0 %}
 
 <script>
-  async function loadAddressBook() {
-    try {
-      const res = await fetch("/api/address-book");
-      const data = await res.json();
-      const delivery = data.delivery || {};
-      const sender = data.sender || {};
-      const select = document.getElementById("presetSelect");
-      const obs = document.getElementById("presetObs");
-      const senderBox = document.getElementById("senderBox");
-
-      const senderDefaultKey = sender["ENGIE SOM (RJ)"] ? "ENGIE SOM (RJ)" : (Object.keys(sender)[0] || "");
-      function renderSender(key){
-        if(!key || !sender[key]){ senderBox.innerHTML = ""; return; }
-        const s = sender[key];
-        senderBox.innerHTML = "<strong>Remetente sugerido:</strong><br>"
-          + (s.nome||"") + "<br>" + (s.endereco||"").replaceAll("\n","<br>")
-          + "<br>" + (s.cep||"") + " • " + (s.cidade||"") + " - " + (s.estado||"");
-      }
-
-      Object.keys(delivery).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(k => {
-        const opt = document.createElement("option");
-        opt.value = k;
-        opt.textContent = k;
-        select.appendChild(opt);
-      });
-
-      renderSender(senderDefaultKey);
-
-      select.addEventListener("change", () => {
-        const k = select.value;
-        if(!k) { obs.textContent = ""; renderSender(senderDefaultKey); return; }
-        const p = delivery[k];
-        const set = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if(el) el.value = val || ""; };
-        set("destinatario", p.destinatario);
-        set("telefone", p.telefone);
-        set("endereco", p.endereco);
-        set("cidade", p.cidade);
-        set("estado", p.estado);
-        set("cep", p.cep);
-        obs.textContent = p.observacoes ? ("Obs: " + p.observacoes) : "";
-        renderSender(senderDefaultKey);
-      });
-    } catch (e) {}
-  }
-  loadAddressBook();
+// campos visíveis definidos pelo servidor — sem necessidade de JS dinâmico
+// (categoria já foi escolhida na tela anterior)
 </script>
 
+<section class="card">
+<form method="post" action="{{ url_for('routes.create_ticket_route') }}" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if selected_cat %}
+  <input type="hidden" name="categoria_id" value="{{ selected_cat.id }}">
+  {% endif %}
+  <input type="hidden" name="classificacao" value="{{ classif or 'REQUISICAO' }}">
+  <div class="grid">
+    <label>Prioridade
+      <select name="prioridade" required>
+        {% for p in PRIORITIES %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+      </select>
+    </label>
 
-      <label>Destinatário <input name="destinatario" placeholder="Nome de quem vai receber" /></label>
-      <label>Telefone <input name="telefone" placeholder="(xx) xxxxx-xxxx" /></label>
+    {% if not selected_cat %}
+    <label>Categoria
+      <select name="categoria_id" required>
+        <option value="" disabled selected>Selecione uma categoria</option>
+        {% for cat in categories %}
+          <option value="{{ cat.id }}">{{ cat.nome }}{% if cat.descricao %} — {{ cat.descricao }}{% endif %}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% else %}
+    <div></div>{# grid placeholder #}
+    {% endif %}
 
-      <label class="span-2">Endereço <input name="endereco" placeholder="Rua, número, complemento, bairro" /></label>
+    <label class="span-2">Título
+      <input name="titulo" required placeholder="ex: Compra de headset / Envio de notebook" />
+    </label>
 
-      <label>Cidade <input name="cidade" placeholder="Cidade" /></label>
-      <label>Estado <input name="estado" placeholder="UF" /></label>
+    {% if show_all or 'solicitante' in campos %}
+    <label>Solicitante <input name="solicitante" placeholder="ex: TI / Patrimônio / Nome" /></label>
+    {% endif %}
+    {% if show_all or 'responsavel' in campos %}
+    <label>Responsável <input name="responsavel" placeholder="ex: Eliel / Iago" /></label>
+    {% endif %}
 
-      <label>CEP <input name="cep" placeholder="00000-000" /></label>
-      <label></label>
+    {# Campos exclusivos de compra #}
+    {% if show_all or 'fornecedor' in campos %}
+    <label>Fornecedor <input name="fornecedor" placeholder="ex: Kabum / Amazon / Fornecedor X" /></label>
+    {% endif %}
+    {% if show_all or 'centro_custo' in campos %}
+    <label>Centro de custo <input name="centro_custo" placeholder="ex: TI-001" /></label>
+    {% endif %}
+    {% if show_all or 'valor_estimado' in campos %}
+    <label>Valor estimado (R$) <input name="valor_estimado" placeholder="ex: 249,90" /></label>
+    {% endif %}
+    {% if show_all or 'codigo_rastreio' in campos %}
+    <label>Código de rastreio <input name="codigo_rastreio" placeholder="ex: BR123..." /></label>
+    {% endif %}
+    {% if show_all or 'link_pedido' in campos %}
+    <label class="span-2">Link do pedido <input name="link_pedido" placeholder="ex: link interno / pedido / cotação" /></label>
+    {% endif %}
+
+    {% if show_all or 'data_limite' in campos %}
+    <label>Data limite (YYYY-MM-DD) <input name="data_limite" placeholder="ex: 2026-03-15" /></label>
+    {% endif %}
+    {% if show_all or 'asset' in campos %}
+    <label>Ativo vinculado
+      <select name="asset_id">
+        <option value="">(nenhum)</option>
+        {% for a in assets %}<option value="{{ a.id }}">#{{ a.id }} • {{ a.tag }} • {{ a.modelo }}</option>{% endfor %}
+      </select>
+    </label>
+    {% endif %}
+
+    {% if show_all or 'descricao' in campos %}
+    <label class="span-2">Descrição
+      <textarea name="descricao" rows="4" placeholder="Detalhe: item, quantidade, endereço, justificativa..."></textarea>
+    </label>
+    {% endif %}
+
+    {% if show_all or 'entrega' in campos %}
+    <div class="span-2">
+      <div class="divider">Dados de entrega</div>
+      <div class="grid" style="margin-top:10px;">
+        <div class="span-2">
+          <label>Preencher endereço por base/local (opcional)
+            <select id="presetSelect"><option value="">(selecionar)</option></select>
+          </label>
+          <div class="muted" id="presetObs" style="margin-top:6px"></div>
+          <div class="muted" id="senderBox" style="margin-top:8px"></div>
+        </div>
+        <label>Destinatário <input name="destinatario" placeholder="Nome de quem vai receber" /></label>
+        <label>Telefone <input name="telefone" placeholder="(xx) xxxxx-xxxx" /></label>
+        <label class="span-2">Endereço <input name="endereco" placeholder="Rua, número, complemento, bairro" /></label>
+        <label>Cidade <input name="cidade" placeholder="Cidade" /></label>
+        <label>Estado <input name="estado" placeholder="UF" /></label>
+        <label>CEP <input name="cep" placeholder="00000-000" /></label>
+        <label></label>
+      </div>
     </div>
+    {% endif %}
+  </div>
 
-    <div class="actions">
-      <button class="btn" type="submit">Criar</button>
-      <a class="btn secondary" href="{{ url_for('routes.index') }}">Cancelar</a>
-    </div>
-  </form>
+  <div class="actions">
+    <button class="btn" type="submit">Criar chamado</button>
+    <a class="btn secondary" href="{{ url_for('routes.index') }}">Cancelar</a>
+  </div>
+</form>
 </section>
+
+{% if show_all or 'entrega' in campos %}
+<script>
+async function loadAddressBook() {
+  try {
+    const res = await fetch("/api/address-book");
+    const data = await res.json();
+    const delivery = data.delivery || {};
+    const sender = data.sender || {};
+    const select = document.getElementById("presetSelect");
+    const obs = document.getElementById("presetObs");
+    const senderBox = document.getElementById("senderBox");
+    if (!select) return;
+    const senderDefaultKey = Object.keys(sender)[0] || "";
+    function renderSender(key){
+      if(!key || !sender[key]){ senderBox.innerHTML = ""; return; }
+      const s = sender[key];
+      senderBox.innerHTML = "<strong>Remetente sugerido:</strong><br>" + (s.nome||"") + "<br>"
+        + (s.endereco||"").replaceAll("\n","<br>") + "<br>" + (s.cep||"") + " • " + (s.cidade||"") + " - " + (s.estado||"");
+    }
+    Object.keys(delivery).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(k => {
+      const opt = document.createElement("option"); opt.value = k; opt.textContent = k; select.appendChild(opt);
+    });
+    renderSender(senderDefaultKey);
+    select.addEventListener("change", () => {
+      const k = select.value;
+      if(!k){ obs.textContent = ""; renderSender(senderDefaultKey); return; }
+      const p = delivery[k];
+      const set = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if(el) el.value = val||""; };
+      set("destinatario",p.destinatario); set("telefone",p.telefone);
+      set("endereco",p.endereco); set("cidade",p.cidade); set("estado",p.estado); set("cep",p.cep);
+      obs.textContent = p.observacoes ? ("Obs: "+p.observacoes) : "";
+      renderSender(senderDefaultKey);
+    });
+  } catch(e){}
+}
+loadAddressBook();
+</script>
+{% endif %}
 {% endblock %}

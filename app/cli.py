@@ -48,3 +48,19 @@ def init_cli(app: Flask):
             body=body,
         )
         click.echo("E-mail enviado." if ok else "Não foi possível enviar (SMTP não configurado).")
+
+
+    @app.cli.command("assignment-fallback")
+    @click.option("--minutes", default=None, type=int, help="Sobrescreve o timeout em minutos para esta execução.")
+    def assignment_fallback_command(minutes):
+        """Executa manualmente a autoatribuição por timeout de assunção."""
+        from .models import auto_assign_overdue_tickets
+        timeout = minutes if minutes is not None else app.config.get('ASSIGNMENT_TIMEOUT_MINUTES', 15)
+        processed = auto_assign_overdue_tickets(timeout)
+        click.echo(f"{processed} chamado(s) autoatribuído(s) por timeout de assunção.")
+
+    @app.cli.command("cleanup-nf-drafts")
+    def cleanup_nf_drafts_command():
+        from .services.nf_service import cleanup_expired_cancelled_drafts
+        removed = cleanup_expired_cancelled_drafts()
+        click.echo(f"{removed} rascunho(s) cancelado(s) removido(s).")

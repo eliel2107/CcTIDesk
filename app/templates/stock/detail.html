@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="ticket-id" style="margin-bottom:4px;">#{{ produto.id }} · {{ produto.categoria }}</div>
+      <h1 style="margin-bottom:4px;">{{ produto.nome }}</h1>
+      <div class="badges">
+        <span class="pill">{{ produto.unidade }}</span>
+        {% if not produto.ativo %}<span class="pill pill-archived">Inativo</span>{% endif %}
+        {% if produto.localizacao %}<span class="pill">📍 {{ produto.localizacao }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="actions">
+      {% if g.user["role"] in ["admin","operador"] %}
+        <a class="btn secondary" href="{{ url_for('stock.editar_produto', pid=produto.id) }}">Editar</a>
+      {% endif %}
+      <a class="btn secondary" href="{{ url_for('stock.stock_home') }}">← Estoque</a>
+    </div>
+  </div>
+</section>
+
+<div class="detail-grid">
+  {# ── Coluna principal ── #}
+  <div>
+    {# Saldo atual grande #}
+    <section class="card" style="text-align:center;padding:28px;">
+      <div style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;margin-bottom:10px;">Quantidade em estoque</div>
+      <div style="font-size:60px;font-weight:900;font-family:monospace;line-height:1;color:
+        {% if produto.quantidade_atual == 0 %}var(--bad)
+        {% elif produto.quantidade_atual <= produto.quantidade_minima and produto.quantidade_minima > 0 %}var(--warn)
+        {% else %}var(--ok){% endif %};">
+        {{ produto.quantidade_atual }}
+      </div>
+      <div style="font-size:16px;color:var(--muted);margin-top:6px;">{{ produto.unidade }}{% if produto.quantidade_atual != 1 %}s{% endif %}</div>
+      {% if produto.quantidade_minima > 0 %}
+        <div style="margin-top:12px;font-size:13px;color:var(--muted);">Mínimo configurado: <strong>{{ produto.quantidade_minima }}</strong></div>
+        {% if produto.quantidade_atual <= produto.quantidade_minima %}
+          <div style="margin-top:8px;" class="flash flash-error">⚠ Estoque abaixo do mínimo — repor!</div>
+        {% endif %}
+      {% endif %}
+    </section>
+
+    {% if produto.descricao %}
+    <section class="card">
+      <h2>Observações</h2>
+      <p>{{ produto.descricao }}</p>
+    </section>
+    {% endif %}
+
+    {# ── Movimentações ── #}
+    <section class="card">
+      <h2 style="margin-bottom:14px;">Histórico de movimentações</h2>
+      {% if movimentacoes|length == 0 %}
+        <div class="muted">Nenhuma movimentação ainda.</div>
+      {% else %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Tipo</th><th>Qtd</th><th>Motivo</th><th>Chamado</th><th>Usuário</th>
+          </tr></thead>
+          <tbody>
+            {% for m in movimentacoes %}
+            <tr>
+              <td style="font-family:monospace;font-size:12px;">{{ m.criado_em[5:16] }}</td>
+              <td>
+                {% if m.tipo == 'ENTRADA' %}
+                  <span class="pill" style="border-color:rgba(15,203,122,.3);color:var(--ok);">↑ Entrada</span>
+                {% elif m.tipo == 'SAIDA' %}
+                  <span class="pill" style="border-color:rgba(255,74,74,.3);color:var(--bad);">↓ Saída</span>
+                {% else %}
+                  <span class="pill" style="border-color:rgba(245,166,35,.3);color:var(--warn);">⇄ Ajuste</span>
+                {% endif %}
+              </td>
+              <td style="font-family:monospace;font-weight:800;color:{% if m.tipo=='ENTRADA' %}var(--ok){% elif m.tipo=='SAIDA' %}var(--bad){% else %}var(--warn){% endif %}">
+                {% if m.tipo == 'ENTRADA' %}+{% elif m.tipo == 'SAIDA' %}-{% else %}={% endif %}{{ m.quantidade }}
+              </td>
+              <td style="max-width:200px;white-space:normal;">{{ m.motivo or "—" }}</td>
+              <td>
+                {% if m.ticket_id %}
+                  <a href="{{ url_for('routes.ticket_detail', ticket_id=m.ticket_id) }}" style="font-size:12px;">
+                    #{{ m.ticket_id }} {{ m.ticket_titulo[:22] if m.ticket_titulo else '' }}…
+                  </a>
+                {% else %}—{% endif %}
+              </td>
+              <td style="font-size:12px;color:var(--muted);">{{ m.usuario or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+
+  {# ── Sidebar: registrar movimentação ── #}
+  <div class="side-pane">
+    <div class="sticky-card">
+      {% if g.user["role"] in ["admin","operador"] %}
+      <section class="card">
+        <h2 style="margin-bottom:16px;">Registrar movimentação</h2>
+        <form method="post" action="{{ url_for('stock.movimentar', pid=produto.id) }}" class="form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <label>Tipo de movimentação
+            <select name="tipo" id="tipoSelect">
+              <option value="ENTRADA">↑ Entrada (recebimento / compra)</option>
+              <option value="SAIDA">↓ Saída (consumo / retirada)</option>
+              <option value="AJUSTE">⇄ Ajuste (acerto de inventário)</option>
+            </select>
+          </label>
+
+          <label>Quantidade
+            <input type="number" name="quantidade" min="1" value="1" required
+                   placeholder="Quantidade">
+          </label>
+
+          <label>Motivo / Observação
+            <input name="motivo" placeholder="ex: Compra NF-4521, retirada por Eliel…">
+          </label>
+
+          <div class="actions">
+            <button class="btn" type="submit">Confirmar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" style="margin-top:0;">
+        <h2 style="margin-bottom:4px;">Saída via chamado</h2>
+        <p class="muted" style="font-size:12px;margin-bottom:14px;">Registre o consumo linkando a um chamado existente.</p>
+        <form method="post" action="{{ url_for('stock.consumir_ticket') }}" class="form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="produto_id" value="{{ produto.id }}">
+          <label>Nº do chamado
+            <input type="number" name="ticket_id" min="1" placeholder="ex: 42" required>
+          </label>
+          <label>Quantidade
+            <input type="number" name="quantidade" min="1" value="1" required>
+          </label>
+          <label>Motivo
+            <input name="motivo" placeholder="opcional">
+          </label>
+          <div class="actions">
+            <button class="btn secondary" type="submit">Vincular saída ao chamado</button>
+          </div>
+        </form>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

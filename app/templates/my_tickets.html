@@ -2,7 +2,7 @@
 {% block content %}
 <section class="card">
   <h1>Meus chamados</h1>
-  <div class="muted">Acompanhe o andamento e veja quem está tratando cada demanda.</div>
+  <div class="muted">Acompanhe o andamento de todas as suas solicitações.</div>
 </section>
 
 <section class="card">
@@ -12,23 +12,47 @@
     {% endif %}
     {% for t in tickets %}
       {% set is_overdue = (t.data_limite and t.data_limite < stats_today and t.status not in ['CONCLUIDO','CANCELADO']) %}
-      <div class="ticket-card {% if is_overdue %}overdue{% endif %}">
+      {% set is_done = t.status == 'CONCLUIDO' %}
+      {% set is_pending = t.status == 'AGUARDANDO_CONFIRMACAO' %}
+      {% set is_info = t.status == 'AGUARDANDO_INFO' %}
+      <div class="ticket-card {% if is_overdue %}overdue{% elif is_done %}done-card{% elif is_pending %}pending-card{% elif is_info %}info-card{% endif %}">
         <div class="ticket-header">
-          <div class="ticket-id">#{{ t.id }}</div>
+          <div class="ticket-id">
+            {% if t.numero_chamado %}{{ t.numero_chamado }}{% else %}#{{ t.id }}{% endif %}
+          </div>
           <div class="ticket-meta">
-            <span class="pill">{{ t.tipo }}</span>
-            <span class="pill">{{ t.status }}</span>
+            <span class="pill {% if is_pending %}pill-pending{% elif is_done %}pill-done{% elif is_info %}pill-info{% endif %}">
+              {{ t.status.replace('_',' ') }}
+            </span>
             <span class="pill">{{ t.prioridade }}</span>
           </div>
         </div>
         <h3 class="ticket-title"><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.titulo }}</a></h3>
         <div class="ticket-info">
-          <div>👤 Tratando: <strong>{{ t.responsavel or "Aguardando operador" }}</strong></div>
+          {% if is_done %}
+            <div>✅ <strong>Concluído</strong> — atendido por {{ t.responsavel or "–" }}</div>
+          {% elif is_pending %}
+            <div>🕐 <strong>Aguardando sua confirmação</strong> — <a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">Confirmar ou rejeitar →</a></div>
+          {% elif is_info %}
+            <div>⚠️ <strong>Complemento necessário</strong> — <a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}" style="color:#f59e0b;font-weight:700;">Adicionar informações →</a></div>
+          {% else %}
+            <div>👤 Tratando: <strong>{{ t.responsavel or "Aguardando operador" }}</strong></div>
+          {% endif %}
           <div class="muted">Atualizado: {{ t.atualizado_em }}</div>
-          <div class="muted">Prazo: {{ t.data_limite or "-" }}</div>
+          <div class="muted">Prazo: {{ t.data_limite or "–" }}</div>
         </div>
       </div>
     {% endfor %}
   </div>
 </section>
+
+<style>
+.done-card { opacity: .75; }
+.done-card .ticket-title a { color: var(--muted, #8892a4); }
+.pending-card { border-left: 3px solid #f59e0b !important; }
+.info-card { border-left: 3px solid #f59e0b !important; background: rgba(245,158,11,.04); }
+.pill-pending { background:#f59e0b !important; color:#000 !important; }
+.pill-done    { background:#22c55e !important; color:#000 !important; }
+.pill-info    { background:#f59e0b !important; color:#000 !important; }
+</style>
 {% endblock %}

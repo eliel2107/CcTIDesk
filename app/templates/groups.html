@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="eyebrow">Admin</div>
+      <h1>Grupos de operadores</h1>
+      <div class="muted">Organize operadores em times para atribuição automática de chamados e controle por categoria.</div>
+    </div>
+  </div>
+</section>
+
+{% for grp in groups %}
+  {% set members = group_members_map.get(grp.id, []) %}
+  {% set linked_categories = group_categories_map.get(grp.id, []) %}
+  {% set member_ids = members | map(attribute='id') | list %}
+  {% set category_ids = linked_categories | map(attribute='id') | list %}
+  <section class="card" style="border-left:4px solid {{ grp.cor }};">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+      <div>
+        <div class="eyebrow">Grupo</div>
+        <h2 style="margin:0 0 6px;">{{ grp.nome }} {% if not grp.ativo %}<span class="pill" style="font-size:.72rem;">INATIVO</span>{% endif %}</h2>
+        <div class="muted">{{ grp.descricao or 'Sem descrição informada.' }}</div>
+      </div>
+      <div class="group-summary-badges">
+        <span class="pill">{{ members|length }} operador(es)</span>
+        <span class="pill">{{ linked_categories|length }} categoria(s)</span>
+      </div>
+    </div>
+
+    <div class="group-summary-grid">
+      <div>
+        <div class="muted" style="margin-bottom:8px;font-weight:700;">Operadores do grupo</div>
+        <div class="group-pill-list">
+          {% if members %}
+            {% for user in members %}
+              <span class="pill">{{ user.nome }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="muted">Nenhum operador vinculado.</span>
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <div class="muted" style="margin-bottom:8px;font-weight:700;">Categorias atendidas</div>
+        <div class="group-pill-list">
+          {% if linked_categories %}
+            {% for cat in linked_categories %}
+              <span class="pill" style="background:{{ cat.cor or '#3b82f6' }};color:#fff;">{{ cat.nome }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="muted">Nenhuma categoria vinculada.</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <details class="group-editor" style="margin-top:14px;">
+      <summary class="mini">Editar grupo</summary>
+      <form method="post" action="{{ url_for('routes.edit_group_route', group_id=grp.id) }}" class="form" style="margin-top:12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="grid">
+          <label>Nome
+            <input name="nome" value="{{ grp.nome }}" required>
+          </label>
+          <label>Descrição
+            <input name="descricao" value="{{ grp.descricao or '' }}">
+          </label>
+          <label>Cor
+            <input type="color" name="cor" value="{{ grp.cor or '#6366f1' }}" style="height:36px;width:80px;">
+          </label>
+          <label>
+            <span>Ativo</span>
+            <select name="ativo">
+              <option value="1" {% if grp.ativo %}selected{% endif %}>Sim</option>
+              <option value="0" {% if not grp.ativo %}selected{% endif %}>Não</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-chip-panel" data-field-chip-group>
+          <div class="field-chip-toolbar">
+            <div class="muted" style="font-size:.85em;line-height:1.5">
+              Selecione os <strong>operadores</strong> que fazem parte deste grupo.
+            </div>
+            <div class="field-chip-actions">
+              <button type="button" class="chip-action-btn" data-chip-action="check-all">Marcar todos</button>
+              <button type="button" class="chip-action-btn" data-chip-action="clear-all">Limpar</button>
+            </div>
+          </div>
+          <div class="field-chip-list">
+            {% for user in operators %}
+              <div class="field-chip">
+                <input class="field-chip-input" type="checkbox" id="group-{{ grp.id }}-user-{{ user.id }}" name="user_ids" value="{{ user.id }}" {% if user.id in member_ids %}checked{% endif %}>
+                <label class="field-chip-label user-category-chip-label" for="group-{{ grp.id }}-user-{{ user.id }}">
+                  <span class="field-chip-dot" style="--chip-dot-color: {% if user.role == 'admin' %}#f59e0b{% else %}#22c55e{% endif %}"></span>
+                  <span>{{ user.nome }}</span>
+                  <span class="muted">{{ user.role }}</span>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="field-chip-panel" data-field-chip-group style="margin-top:12px;">
+          <div class="field-chip-toolbar">
+            <div class="muted" style="font-size:.85em;line-height:1.5">
+              Vincule as <strong>categorias</strong> atendidas por este grupo.
+            </div>
+            <div class="field-chip-actions">
+              <button type="button" class="chip-action-btn" data-chip-action="check-all">Marcar todos</button>
+              <button type="button" class="chip-action-btn" data-chip-action="clear-all">Limpar</button>
+            </div>
+          </div>
+          <div class="field-chip-list">
+            {% for cat in categories %}
+              <div class="field-chip">
+                <input class="field-chip-input" type="checkbox" id="group-{{ grp.id }}-cat-{{ cat.id }}" name="category_ids" value="{{ cat.id }}" {% if cat.id in category_ids %}checked{% endif %}>
+                <label class="field-chip-label user-category-chip-label" for="group-{{ grp.id }}-cat-{{ cat.id }}">
+                  <span class="field-chip-dot" style="--chip-dot-color: {{ cat.cor or '#3b82f6' }}"></span>
+                  <span>{{ cat.nome }}</span>
+                  {% if cat.descricao %}<span class="muted">{{ cat.descricao }}</span>{% endif %}
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="actions"><button class="btn secondary" type="submit">Salvar grupo</button></div>
+      </form>
+    </details>
+  </section>
+{% else %}
+  <section class="card"><div class="muted">Nenhum grupo cadastrado até o momento.</div></section>
+{% endfor %}
+
+<section class="card">
+  <h2>Novo grupo</h2>
+  <form method="post" action="{{ url_for('routes.create_group_route') }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <label>Nome <input name="nome" required></label>
+      <label>Descrição <input name="descricao"></label>
+      <label>Cor <input type="color" name="cor" value="#6366f1" style="height:36px;width:80px;"></label>
+    </div>
+
+    <div class="field-chip-panel" data-field-chip-group>
+      <div class="field-chip-toolbar">
+        <div class="muted" style="font-size:.85em;line-height:1.5">Selecione os operadores que farão parte do novo grupo.</div>
+        <div class="field-chip-actions">
+          <button type="button" class="chip-action-btn" data-chip-action="check-all">Marcar todos</button>
+          <button type="button" class="chip-action-btn" data-chip-action="clear-all">Limpar</button>
+        </div>
+      </div>
+      <div class="field-chip-list">
+        {% for user in operators %}
+          <div class="field-chip">
+            <input class="field-chip-input" type="checkbox" id="new-group-user-{{ user.id }}" name="user_ids" value="{{ user.id }}">
+            <label class="field-chip-label user-category-chip-label" for="new-group-user-{{ user.id }}">
+              <span class="field-chip-dot" style="--chip-dot-color: {% if user.role == 'admin' %}#f59e0b{% else %}#22c55e{% endif %}"></span>
+              <span>{{ user.nome }}</span>
+              <span class="muted">{{ user.role }}</span>
+            </label>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="field-chip-panel" data-field-chip-group style="margin-top:12px;">
+      <div class="field-chip-toolbar">
+        <div class="muted" style="font-size:.85em;line-height:1.5">Selecione as categorias cobertas pelo novo grupo.</div>
+        <div class="field-chip-actions">
+          <button type="button" class="chip-action-btn" data-chip-action="check-all">Marcar todos</button>
+          <button type="button" class="chip-action-btn" data-chip-action="clear-all">Limpar</button>
+        </div>
+      </div>
+      <div class="field-chip-list">
+        {% for cat in categories %}
+          <div class="field-chip">
+            <input class="field-chip-input" type="checkbox" id="new-group-cat-{{ cat.id }}" name="category_ids" value="{{ cat.id }}">
+            <label class="field-chip-label user-category-chip-label" for="new-group-cat-{{ cat.id }}">
+              <span class="field-chip-dot" style="--chip-dot-color: {{ cat.cor or '#3b82f6' }}"></span>
+              <span>{{ cat.nome }}</span>
+              {% if cat.descricao %}<span class="muted">{{ cat.descricao }}</span>{% endif %}
+            </label>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="actions"><button class="btn" type="submit">Criar grupo</button></div>
+  </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/category-field-chips.js') }}"></script>
+{% endblock %}

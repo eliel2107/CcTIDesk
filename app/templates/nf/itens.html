@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid var(--b1);max-width:900px;">
+  <div style="flex:1;padding:10px 14px;background:var(--s3);color:var(--fg2);font-size:12px;font-weight:800;text-align:center;">✓ Cabeçalho</div>
+  <div style="flex:1;padding:10px 14px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;text-align:center;">2 — Itens</div>
+  <div style="flex:1;padding:10px 14px;background:var(--s2);color:var(--muted);font-size:12px;font-weight:700;text-align:center;">3 — Revisar &amp; Confirmar</div>
+</div>
+
+<section class="card" style="max-width:900px;margin-bottom:14px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div>
+      <div class="eyebrow">NF em edição</div>
+      <h2 style="margin:0;">{{ entrada.numero_nf }}{% if entrada.fornecedor %}<span class="muted" style="font-weight:400;font-size:14px;"> — {{ entrada.fornecedor }}</span>{% endif %}</h2>
+      {% if entrada.base_destino %}<div class="muted" style="font-size:13px;">📍 {{ entrada.base_destino }}</div>{% endif %}
+    </div>
+    <a class="btn ghost" href="{{ url_for('nf.nf_editar', eid=entrada.id) }}" style="font-size:12px;">Editar cabeçalho</a>
+  </div>
+</section>
+
+<div class="layout-premium" style="align-items:start;">
+
+  <div>
+    <section class="card">
+      <h2 style="margin-bottom:14px;">Itens desta entrada</h2>
+      {% if itens|length == 0 %}
+        <div style="padding:24px;border:2px dashed var(--b2);border-radius:var(--r);text-align:center;color:var(--muted);">
+          Nenhum item ainda — use o painel ao lado.
+        </div>
+      {% else %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tipo</th><th>Modelo</th><th>Qtd</th><th>Tag / Prefixo</th><th></th></tr></thead>
+          <tbody>
+            {% for it in itens %}
+            <tr>
+              <td><span class="pill {% if it.tipo_item in TIPOS_ATIVO %}pill-done{% else %}pill-info{% endif %}" style="font-size:10px;">{{ TIPO_LABEL.get(it.tipo_item, it.tipo_item) }}</span></td>
+              <td style="font-weight:600;">{{ it.modelo }}</td>
+              <td style="font-family:monospace;font-weight:800;font-size:16px;text-align:center;">{{ it.quantidade }}</td>
+              <td style="font-family:monospace;color:var(--muted);font-size:12px;">
+                {% if it.prefixo_tag %}{{ it.prefixo_tag }}{% if it.quantidade > 1 %}-###{% endif %}{% else %}—{% endif %}
+              </td>
+              <td>
+                <form method="post" action="{{ url_for('nf.nf_remover_item', eid=entrada.id, iid=it.id) }}" onsubmit="return confirm('Remover?')" style="margin:0;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="mini danger" type="submit">✕</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:20px;margin-top:12px;padding-top:12px;border-top:1px solid var(--b1);font-size:13px;flex-wrap:wrap;">
+        {% set ta = itens|selectattr('tipo_item','in',TIPOS_ATIVO)|map(attribute='quantidade')|sum %}
+        {% set tc = itens|map(attribute='quantidade')|sum - ta %}
+        {% if ta > 0 %}<span>🖥 <strong>{{ ta }}</strong> ativo(s)</span>{% endif %}
+        {% if tc > 0 %}<span>📦 <strong>{{ tc }}</strong> consumível(is)</span>{% endif %}
+        <span class="muted">Total: <strong>{{ itens|map(attribute='quantidade')|sum }}</strong> un.</span>
+      </div>
+      {% endif %}
+    </section>
+
+    {% if itens|length > 0 %}
+    <div class="actions" style="margin-top:0;">
+      <a class="btn" href="{{ url_for('nf.nf_preview', eid=entrada.id) }}">Revisar e confirmar →</a>
+      <a class="btn secondary" href="{{ url_for('nf.nf_list') }}">Salvar rascunho</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="side-pane">
+    <div class="sticky-card" style="display:flex;flex-direction:column;gap:12px;">
+
+      <section class="card" style="padding:0;overflow:hidden;">
+        <div style="display:flex;border-bottom:1px solid var(--b1);">
+          <button id="tabCatalogo" onclick="showTab('catalogo')" class="tab-btn tab-active" style="flex:1;">📋 Catálogo</button>
+          <button id="tabNovo"     onclick="showTab('novo')"     class="tab-btn"            style="flex:1;">✏️ Avulso</button>
+        </div>
+
+        {# ── ABA CATÁLOGO ── #}
+        <div id="paneCatalogo" style="padding:14px;">
+          {% if catalogo|length == 0 %}
+            <div class="muted" style="font-size:12px;text-align:center;padding:8px 0;">
+              Catálogo vazio.<br>
+              <a href="{{ url_for('catalogo.catalogo_novo') }}">+ Cadastrar primeiro produto</a>
+            </div>
+          {% else %}
+          <input id="catalogoBusca" type="text" placeholder="🔍  filtrar…" oninput="filtrarCatalogo()"
+                 style="width:100%;min-height:36px;padding:7px 11px;font-size:13px;margin-bottom:10px;">
+
+          <form method="post" action="{{ url_for('nf.nf_add_items_catalogo', eid=entrada.id) }}" id="formCatalogo">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div id="catalogoLista" style="display:flex;flex-direction:column;gap:5px;max-height:400px;overflow-y:auto;">
+              {% for p in catalogo %}
+              <label id="cl-{{ p.id }}" data-nome="{{ p.nome|lower }}" data-tipo="{{ p.tipo_item|lower }}"
+                     style="display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid var(--b1);border-radius:var(--rs);cursor:pointer;margin:0;transition:all .13s;">
+                <input type="checkbox" name="catalogo_ids" value="{{ p.id }}" id="chk-{{ p.id }}"
+                       onchange="toggleLinha(this)" style="margin:0;flex-shrink:0;">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:700;font-size:12.5px;line-height:1.25;">{{ p.nome }}</div>
+                  <div style="display:flex;gap:5px;margin-top:2px;flex-wrap:wrap;align-items:center;">
+                    <span class="pill {% if p.tipo_item in TIPOS_ATIVO %}pill-done{% else %}pill-info{% endif %}" style="font-size:9px;">{{ TIPO_LABEL.get(p.tipo_item,'') }}</span>
+                    {% if p.codigo_oracle %}<span style="font-size:10px;color:var(--muted);font-family:monospace;">{{ p.codigo_oracle }}</span>{% endif %}
+                    {% if p.valor_unitario %}<span style="font-size:10px;color:var(--muted);">R$ {{ "%.2f"|format(p.valor_unitario) }}</span>{% endif %}
+                  </div>
+                </div>
+                <input type="number" name="qtd_{{ p.id }}" value="1" min="1" id="qtd-{{ p.id }}"
+                       style="width:52px;min-height:32px;padding:4px 6px;font-size:13px;font-weight:700;display:none;flex-shrink:0;"
+                       onclick="event.stopPropagation()" title="Quantidade">
+              </label>
+              {% endfor %}
+            </div>
+
+            <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+              <button class="btn" type="submit" id="btnAdd" disabled style="flex:1;font-size:13px;">Adicionar selecionados</button>
+              <span id="selCount" style="font-size:12px;color:var(--muted);">0 sel.</span>
+            </div>
+          </form>
+          <div style="margin-top:8px;text-align:right;">
+            <a href="{{ url_for('catalogo.catalogo_list') }}" style="font-size:11px;color:var(--muted);">Gerenciar catálogo →</a>
+          </div>
+          {% endif %}
+        </div>
+
+        {# ── ABA AVULSO ── #}
+        <div id="paneNovo" style="padding:14px;display:none;">
+          <form method="post" action="{{ url_for('nf.nf_add_item', eid=entrada.id) }}" class="form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>Tipo *
+              <select name="tipo_item" id="tipoSel" required onchange="updFields()">
+                <option value="">(selecionar)</option>
+                <optgroup label="Ativos (tag individual)">
+                  <option value="NOTEBOOK">Notebook</option><option value="DESKTOP">Desktop</option>
+                  <option value="MONITOR">Monitor</option><option value="CELULAR">Celular</option>
+                  <option value="TABLET">Tablet</option><option value="OUTRO">Outro (ativo)</option>
+                </optgroup>
+                <optgroup label="Consumíveis / Estoque">
+                  <option value="PERIFERICO">Periférico</option><option value="CABO_ADAPTADOR">Cabo / Adaptador</option>
+                  <option value="SIM_CARD">SIM Card</option><option value="ACESSORIO_STOCK">Acessório</option>
+                </optgroup>
+              </select>
+            </label>
+            <label>Modelo *<input name="modelo" required placeholder="ex: Latitude 5430, Mouse USB…"></label>
+            <label>Qtd *<input type="number" name="quantidade" id="qtdAvulso" min="1" value="1" required onchange="updFields()"></label>
+            <div id="fTagUnica" style="display:none;">
+              <label style="color:var(--accent-h);">Tag já conhecida
+                <input name="prefixo_tag" id="tagUnicaInput" placeholder="ex: NB-042">
+              </label>
+              <div style="font-size:11px;color:var(--muted);margin-top:-10px;margin-bottom:8px;">Se a tag já está definida na NF, preencha aqui. O ativo migra direto com essa tag.</div>
+            </div>
+            <div id="fPrefixo" style="display:none;">
+              <label>Prefixo da tag<input name="prefixo_tag" id="prefixoAvulso" placeholder="ex: NB (gerado auto)"></label>
+            </div>
+            <div id="fSerial" style="display:none;">
+              <label>Seriais (opcional, um por linha)<textarea name="serial_numbers" rows="3" placeholder="Um por linha"></textarea></label>
+            </div>
+            <div class="actions"><button class="btn" type="submit">Adicionar</button></div>
+          </form>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.tab-btn { padding:11px 10px;background:var(--s2);color:var(--fg2);border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .13s; }
+.tab-active { background:var(--accent)!important;color:#fff!important; }
+</style>
+<script>
+function showTab(t){
+  document.getElementById('paneCatalogo').style.display = t==='catalogo'?'':'none';
+  document.getElementById('paneNovo').style.display     = t==='novo'?'':'none';
+  document.getElementById('tabCatalogo').className = 'tab-btn'+(t==='catalogo'?' tab-active':'');
+  document.getElementById('tabNovo').className     = 'tab-btn'+(t==='novo'?' tab-active':'');
+}
+function toggleLinha(chk){
+  const el = document.getElementById('qtd-'+chk.value);
+  const lb = document.getElementById('cl-'+chk.value);
+  el.style.display = chk.checked ? '' : 'none';
+  lb.style.borderColor = chk.checked ? 'rgba(59,127,255,.45)' : 'var(--b1)';
+  lb.style.background  = chk.checked ? 'rgba(59,127,255,.07)' : '';
+  const n = document.querySelectorAll('[name="catalogo_ids"]:checked').length;
+  document.getElementById('selCount').textContent = n+' sel.';
+  document.getElementById('btnAdd').disabled = n===0;
+}
+function filtrarCatalogo(){
+  const q = document.getElementById('catalogoBusca').value.toLowerCase();
+  document.querySelectorAll('#catalogoLista > label').forEach(function(el){
+    el.style.display = (!q || el.dataset.nome.includes(q) || el.dataset.tipo.includes(q)) ? '' : 'none';
+  });
+}
+const ATIVOS = new Set(['NOTEBOOK','DESKTOP','MONITOR','CELULAR','TABLET','OUTRO']);
+const PREF   = {NOTEBOOK:'NB',DESKTOP:'DK',MONITOR:'MO',CELULAR:'CEL',TABLET:'TAB',OUTRO:'AT'};
+function updFields(){
+  const tipo = document.getElementById('tipoSel').value;
+  const qtd  = parseInt(document.getElementById('qtdAvulso').value)||1;
+  const isA  = ATIVOS.has(tipo);
+  document.getElementById('fTagUnica').style.display = isA && qtd===1 ? '' : 'none';
+  document.getElementById('fPrefixo').style.display  = isA && qtd>1  ? '' : 'none';
+  document.getElementById('fSerial').style.display   = isA ? '' : 'none';
+  if(isA && PREF[tipo]) document.getElementById('prefixoAvulso').placeholder = PREF[tipo]+' (automático)';
+}
+</script>
+{% endblock %}

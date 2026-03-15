@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chamado {{ ticket.numero_chamado or '#'+ticket.id|string }} — Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f1f5f9;color:#1e293b;padding:16px;}
+.container{max-width:720px;margin:0 auto;}
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+h1{font-size:1.3rem;margin-bottom:6px;}
+h2{font-size:1rem;margin-bottom:10px;color:#475569;}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.75rem;font-weight:700;background:#e2e8f0;color:#475569;}
+.pill-open{background:#3b82f6;color:#fff;}
+.pill-done{background:#22c55e;color:#fff;}
+.pill-info{background:#f59e0b;color:#000;}
+.pill-cancel{background:#ef4444;color:#fff;}
+.muted{color:#94a3b8;font-size:.82rem;}
+.btn{display:inline-block;padding:8px 18px;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:.9rem;font-weight:600;text-decoration:none;}
+.btn-green{background:#22c55e;color:#000;}
+.btn-red{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2);}
+.btn-gray{background:#e2e8f0;color:#475569;}
+textarea,input{width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.9rem;font-family:inherit;}
+textarea{resize:vertical;}
+.tl-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f1f5f9;}
+.tl-time{color:#94a3b8;font-size:.75rem;white-space:nowrap;min-width:110px;}
+.alert-info{background:rgba(245,158,11,.1);border-left:4px solid #f59e0b;border-radius:8px;padding:14px 18px;margin-bottom:16px;}
+.flash-msg{padding:10px 16px;border-radius:8px;margin-bottom:12px;font-size:.88rem;}
+.flash-success{background:rgba(34,197,94,.1);border-left:3px solid #22c55e;}
+.flash-info{background:rgba(99,102,241,.1);border-left:3px solid #6366f1;}
+.flash-error{background:rgba(239,68,68,.1);border-left:3px solid #ef4444;}
+</style>
+</head>
+<body>
+<div class="container">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+    <div class="flash-msg flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div>
+        <div class="muted" style="margin-bottom:4px;">Portal de Acompanhamento · CCTI</div>
+        <h1>{{ ticket.titulo }}</h1>
+        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="pill {% if ticket.status=='CONCLUIDO' %}pill-done{% elif ticket.status=='CANCELADO' %}pill-cancel{% elif ticket.status=='AGUARDANDO_INFO' %}pill-info{% else %}pill-open{% endif %}">
+            {{ ticket.status.replace('_',' ') }}
+          </span>
+          <span class="pill">{{ ticket.prioridade }}</span>
+          {% if ticket.numero_chamado %}<span class="pill">{{ ticket.numero_chamado }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="muted" style="text-align:right;font-size:.78rem;">
+        Aberto em {{ ticket.criado_em[:16] }}<br>
+        Responsável: <strong>{{ ticket.responsavel or '–' }}</strong>
+      </div>
+    </div>
+    {% if ticket.descricao %}
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;">
+      <div class="muted" style="margin-bottom:4px;">Descrição original</div>
+      <div style="white-space:pre-wrap;font-size:.9rem;">{{ ticket.descricao }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {# Aguardando info #}
+  {% if ticket.status == 'AGUARDANDO_INFO' %}
+  <div class="alert-info">
+    <strong>⚠️ O operador precisa de mais informações.</strong>
+    {% if ticket.motivo_devolucao %}
+    <div style="margin-top:8px;font-size:.9rem;">{{ ticket.motivo_devolucao }}</div>
+    {% endif %}
+    <form method="post" action="{{ url_for('portal.portal_reenviar', token=token) }}" style="margin-top:12px;">
+      <textarea name="complemento" rows="3" placeholder="Adicione as informações solicitadas..." required style="border:2px solid #f59e0b;margin-bottom:8px;"></textarea>
+      <button class="btn" type="submit" style="background:#f59e0b;color:#000;">📤 Enviar informações</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {# Confirmar conclusão #}
+  {% if ticket.status == 'AGUARDANDO_CONFIRMACAO' %}
+  <div class="card" style="border:2px solid #22c55e;">
+    <h2>✅ O operador finalizou o atendimento</h2>
+    <p style="margin-bottom:14px;font-size:.9rem;">O chamado foi resolvido? Confirme para encerrá-lo ou rejeite se ainda houver pendências.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <form method="post" action="{{ url_for('portal.portal_confirmar', token=token) }}" onsubmit="return confirm('Confirmar conclusão?')">
+        <button class="btn btn-green" type="submit">✔ Confirmar conclusão</button>
+      </form>
+      <form method="post" action="{{ url_for('portal.portal_rejeitar', token=token) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input name="motivo" placeholder="Motivo (opcional)" style="width:220px;">
+        <button class="btn btn-red" type="submit">✖ Rejeitar</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {# Histórico #}
+  <div class="card">
+    <h2>Histórico</h2>
+    {% for l in logs %}
+    <div class="tl-item">
+      <span class="tl-time">{{ l.criado_em[:16] }}</span>
+      <div><strong>{{ l.evento.replace('_',' ') }}</strong><div class="muted">{{ l.detalhe }}</div></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Comentários #}
+  {% if comments %}
+  <div class="card">
+    <h2>Mensagens</h2>
+    {% for c in comments %}
+    <div style="padding:10px;border-radius:8px;background:#f8fafc;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <strong style="font-size:.85rem;">{{ c.user_nome }}</strong>
+        <span class="muted">{{ c.criado_em[:16] }}</span>
+      </div>
+      <div style="font-size:.9rem;white-space:pre-wrap;">{{ c.conteudo }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# Enviar mensagem #}
+  {% if ticket.status not in ('CONCLUIDO','CANCELADO') %}
+  <div class="card">
+    <h2>Enviar mensagem</h2>
+    <form method="post" action="{{ url_for('portal.portal_comentar', token=token) }}">
+      <textarea name="conteudo" rows="3" placeholder="Escreva aqui..." required style="margin-bottom:8px;"></textarea>
+      <button class="btn" type="submit">Enviar</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="muted" style="text-align:center;padding:16px 0;font-size:.75rem;">
+    CCTI Service Desk · Portal de Acompanhamento
+  </div>
+</div>
+</body>
+</html>

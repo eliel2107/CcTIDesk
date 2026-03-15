@@ -1,4 +1,5 @@
 import os
+import warnings
 
 class Config:
     def __init__(self):
@@ -21,15 +22,57 @@ class Config:
         self.ADMIN_DEFAULT_EMAIL = os.getenv("ADMIN_DEFAULT_EMAIL", "admin@local")
         self.ADMIN_DEFAULT_PASSWORD = os.getenv("ADMIN_DEFAULT_PASSWORD", "admin123")
 
-        # ── CSRF (Flask-WTF) ──────────────────────────────────────────────
-        # Em testes, defina WTF_CSRF_ENABLED=False para desabilitar
+        # ── CSRF ─────────────────────────────────────────────────────────
         self.WTF_CSRF_ENABLED = os.getenv("WTF_CSRF_ENABLED", "true").lower() != "false"
-        self.WTF_CSRF_TIME_LIMIT = 3600  # token expira em 1h
+        self.WTF_CSRF_TIME_LIMIT = 3600
 
-        # ── Rate Limiting (flask-limiter) ─────────────────────────────────
-        # Storage em memória por padrão; troque por Redis em produção:
-        # RATELIMIT_STORAGE_URI = "redis://localhost:6379"
+        # ── Rate Limiting ─────────────────────────────────────────────────
         self.RATELIMIT_DEFAULT = "300 per hour"
         self.RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
-        self.RATELIMIT_HEADERS_ENABLED = True   # expõe X-RateLimit-* headers
+        self.RATELIMIT_HEADERS_ENABLED = True
         self.RATELIMIT_STRATEGY = "fixed-window"
+
+        # ── Sentry ────────────────────────────────────────────────────────
+        self.SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+
+        # ── Backup ───────────────────────────────────────────────────────
+        self.BACKUP_DIR = os.getenv("BACKUP_DIR", os.path.join(os.getcwd(), "instance", "backups"))
+        self.BACKUP_KEEP_DAYS = int(os.getenv("BACKUP_KEEP_DAYS", "30"))
+
+        # ── App URL (usado em e-mails e portais externos) ─────────────────
+        self.APP_URL = os.getenv("APP_URL", "http://localhost:5000")
+
+        # ── IA Assistida ────────────────────────────────────────────────────
+        self.AI_ASSIST_ENABLED = os.getenv("AI_ASSIST_ENABLED", "false").lower() == "true"
+        self.AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
+        self.AI_API_KEY = os.getenv("AI_API_KEY", "")
+        self.AI_MODEL = os.getenv("AI_MODEL", "gemini-1.5-flash")
+        self.AI_BASE_URL = os.getenv("AI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta")
+        self.AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "30") or "30")
+        self.AI_MAX_CONTEXT_CHARS = int(os.getenv("AI_MAX_CONTEXT_CHARS", "6000") or "6000")
+
+        # ── Fila / assunção com timeout ───────────────────────────────────────
+        self.ASSIGNMENT_AUTO_FALLBACK_ENABLED = os.getenv("ASSIGNMENT_AUTO_FALLBACK_ENABLED", "true").lower() == "true"
+        self.ASSIGNMENT_TIMEOUT_MINUTES = int(os.getenv("ASSIGNMENT_TIMEOUT_MINUTES", "15") or "15")
+
+        # ── NF / rascunhos ───────────────────────────────────────────────────
+        self.NF_CANCELLED_DRAFT_RETENTION_DAYS = int(os.getenv("NF_CANCELLED_DRAFT_RETENTION_DAYS", "15") or "15")
+
+        self._validate()
+
+    def _validate(self):
+        """Emite avisos se variáveis críticas estão com valores padrão inseguros."""
+        env = os.getenv("FLASK_ENV", "production")
+        if env == "production":
+            if self.SECRET_KEY == "dev-secret-change-me":
+                warnings.warn(
+                    "⚠️  SECRET_KEY está com valor padrão inseguro. "
+                    "Defina a variável de ambiente SECRET_KEY antes de colocar em produção.",
+                    stacklevel=2
+                )
+            if self.ADMIN_DEFAULT_PASSWORD == "admin123":
+                warnings.warn(
+                    "⚠️  ADMIN_DEFAULT_PASSWORD está com valor padrão. "
+                    "Defina ADMIN_DEFAULT_PASSWORD no ambiente.",
+                    stacklevel=2
+                )

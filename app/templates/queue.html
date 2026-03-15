@@ -2,8 +2,15 @@
 {% block content %}
 <section class="card">
   <h1>Fila de chamados</h1>
-  <div class="muted">Chamados abertos pelos solicitantes aguardando triagem e tratamento.
+  <div class="muted">
+    Chamados abertos aguardando triagem e tratamento.
+    {% if user_cat_ids %}
+      <span class="queue-legend" style="margin-left:8px">
+        🎯 Exibindo apenas chamados das <strong>suas categorias</strong>
+      </span>
+    {% endif %}
     <span class="queue-legend"><span class="legend-dot unassigned-dot"></span> Sem responsável — disponível para assumir</span>
+    <span class="queue-legend" style="margin-left:8px">⏱️ Após {{ assignment_timeout_minutes }} min sem aceite, o sistema autoatribui para um operador elegível</span>
   </div>
 
   <form method="get" class="filters">
@@ -14,10 +21,10 @@
           {% for s in STATUSES %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
         </select>
       </label>
-      <label>Tipo
-        <select name="tipo">
-          <option value="">(todos)</option>
-          {% for t in TYPES %}<option value="{{ t }}" {% if filters.tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      <label>Categoria
+        <select name="categoria_id">
+          <option value="">(todas)</option>
+          {% for cat in categories %}<option value="{{ cat.id }}" {% if filters.categoria_id == cat.id|string %}selected{% endif %}>{{ cat.nome }}</option>{% endfor %}
         </select>
       </label>
       <label>Buscar
@@ -37,32 +44,30 @@
     <table>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Título</th>
-          <th>Tipo</th>
-          <th>Solicitante</th>
-          <th>Prioridade</th>
-          <th>Status</th>
-          <th>Responsável</th>
-          <th>Criado em</th>
-          <th>Ação</th>
+          <th>ID</th><th>Título</th><th>Categoria</th>
+          <th>Solicitante</th><th>Prioridade</th><th>Status</th>
+          <th>Responsável</th><th>Criado em</th><th>Ação</th>
         </tr>
       </thead>
       <tbody>
         {% if tickets|length == 0 %}
-          <tr><td colspan="9" class="muted">Nenhum chamado na fila.</td></tr>
+          <tr><td colspan="10" class="muted">Nenhum chamado na fila.</td></tr>
         {% endif %}
         {% for t in tickets %}
           <tr class="{% if not t.assigned_user_id %}queue-row-unassigned{% endif %}">
             <td><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">#{{ t.id }}</a></td>
             <td>
               {{ t.titulo }}
-              {% if not t.assigned_user_id %}
-                <span class="badge-unassigned">Novo</span>
+              {% if not t.assigned_user_id %}<span class="badge-unassigned">Novo</span>{% endif %}
+            </td>
+            <td>
+              {% if t.categoria_nome %}
+                <span class="pill" style="background:{{ t.categoria_cor }};color:#fff;">{{ t.categoria_nome }}</span>
+              {% else %}
+                <span class="muted">—</span>
               {% endif %}
             </td>
-            <td><span class="pill">{{ t.tipo }}</span></td>
-            <td>{{ t.requester_name or t.solicitante or "-" }}</td>
+            <td>{{ t.requester_name or t.solicitante or "–" }}</td>
             <td><span class="pill">{{ t.prioridade }}</span></td>
             <td><span class="pill">{{ t.status }}</span></td>
             <td>
@@ -76,7 +81,7 @@
             <td>
               {% if not t.assigned_user_id %}
                 <form method="post" action="{{ url_for('routes.take_ticket', ticket_id=t.id) }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-assume" type="submit">⚡ Assumir</button>
                 </form>
               {% else %}

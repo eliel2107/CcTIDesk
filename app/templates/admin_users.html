@@ -1,8 +1,11 @@
 {% extends "base.html" %}
+
 {% block content %}
 <section class="card">
   <h1>Usuários</h1>
-  <div class="muted">Crie e gerencie usuários do sistema.</div>
+  <div class="muted">Crie e gerencie usuários do sistema. &nbsp;|&nbsp;
+    <a href="{{ url_for('admin.categories') }}">⚙️ Gerenciar categorias</a>
+  </div>
 </section>
 
 <section class="card">
@@ -36,7 +39,7 @@
   <h2>Lista de usuários</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Categorias atendidas</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
       <tbody>
         {% if users|length == 0 %}<tr><td colspan="6" class="muted">Nenhum usuário encontrado.</td></tr>{% endif %}
         {% for u in users %}
@@ -44,6 +47,62 @@
             <td>{{ u.nome }}</td>
             <td>{{ u.email }}</td>
             <td><span class="pill">{{ u.role }}</span></td>
+            <td>
+              {% if u.role in ['admin'] %}
+                <span class="muted">Acesso total</span>
+              {% elif all_categories|length == 0 %}
+                <span class="muted">Nenhuma categoria cadastrada</span>
+              {% else %}
+                {% set ucats = user_cats.get(u.id, []) %}
+                {% if ucats|length == 0 %}
+                  <span class="muted">Todas (sem restrição)</span>
+                {% else %}
+                  {% for cat in all_categories %}
+                    {% if cat.id in ucats %}
+                      <span class="pill" style="background:{{ cat.cor }};color:#fff;margin:2px 2px;">{{ cat.nome }}</span>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+                <details style="margin-top:6px">
+                  <summary class="mini">Editar categorias</summary>
+                  <form method="post" action="{{ url_for('admin.set_user_categories_route', user_id=u.id) }}" class="form" style="margin-top:8px">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="field-chip-panel user-category-chip-panel" data-field-chip-group>
+                      <div class="field-chip-toolbar">
+                        <div class="muted" style="font-size:.85em;line-height:1.5">
+                          Marque as categorias que <strong>{{ u.nome }}</strong> pode atender.<br>
+                          <em>Se nenhuma for marcada, o usuário verá todos os chamados.</em>
+                        </div>
+                        <div class="field-chip-actions">
+                          <button type="button" class="chip-action-btn" data-chip-action="check-all">Marcar todos</button>
+                          <button type="button" class="chip-action-btn" data-chip-action="clear-all">Limpar</button>
+                        </div>
+                      </div>
+
+                      <div class="field-chip-list">
+                        {% for cat in all_categories %}
+                        <div class="field-chip">
+                          <input
+                            class="field-chip-input"
+                            type="checkbox"
+                            id="user-{{ u.id }}-cat-{{ cat.id }}"
+                            name="category_ids"
+                            value="{{ cat.id }}"
+                            {% if cat.id in ucats %}checked{% endif %}>
+                          <label class="field-chip-label user-category-chip-label" for="user-{{ u.id }}-cat-{{ cat.id }}">
+                            <span class="field-chip-dot" style="--chip-dot-color: {{ cat.cor or '#3b82f6' }}"></span>
+                            <span>{{ cat.nome }}</span>
+                            {% if cat.descricao %}<span class="muted">{{ cat.descricao }}</span>{% endif %}
+                          </label>
+                        </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    <div class="actions"><button class="btn secondary" type="submit">Salvar permissões</button></div>
+                  </form>
+                </details>
+              {% endif %}
+            </td>
             <td>{% if u.active == 1 %}<span class="pill">ATIVO</span>{% else %}<span class="pill">INATIVO</span>{% endif %}</td>
             <td>{{ u.created_em }}</td>
             <td>
@@ -83,4 +142,9 @@
     </table>
   </div>
 </section>
+{% endblock %}
+
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/category-field-chips.js') }}"></script>
 {% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="eyebrow">Base de Conhecimento{% if art.categoria_nome %} · {{ art.categoria_nome }}{% endif %}</div>
+      <h1>{{ art.titulo }}</h1>
+      <div class="muted" style="font-size:.82rem;">
+        Por <strong>{{ art.autor_nome }}</strong> · {{ art.atualizado_em[:10] }} · 👁 {{ art.visualizacoes }} visualizações
+        {% if not art.publico %} · <span style="color:#f59e0b;">🔒 Interno</span>{% endif %}
+      </div>
+    </div>
+    {% if g.user and g.user.role in ('admin','operador') %}
+    <div class="actions">
+      <a class="btn secondary" href="{{ url_for('kb.kb_edit', article_id=art.id) }}">Editar</a>
+      <form method="post" action="{{ url_for('kb.kb_delete', article_id=art.id) }}" onsubmit="return confirm('Excluir este artigo?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn secondary" style="color:#ef4444;">Excluir</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</section>
+<section class="card kb-content">
+  <div style="white-space:pre-wrap;line-height:1.7;">{{ art.conteudo }}</div>
+  {% if art.tags %}
+  <div style="margin-top:16px;display:flex;gap:6px;flex-wrap:wrap;">
+    {% for tag in art.tags.split(',') %}
+    <span class="pill" style="font-size:.75rem;background:rgba(99,102,241,.12);">{{ tag.strip() }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if art.ticket_id %}
+  <div class="muted" style="margin-top:12px;font-size:.82rem;">
+    📎 Gerado a partir do <a href="{{ url_for('routes.ticket_detail', ticket_id=art.ticket_id) }}">chamado #{{ art.ticket_id }}</a>
+  </div>
+  {% endif %}
+</section>
+{% if related %}
+<section class="card"><h2>Artigos relacionados</h2>
+  {% for r in related %}
+  <div style="padding:6px 0;border-bottom:1px solid var(--border);"><a href="{{ url_for('kb.kb_article', article_id=r.id) }}">{{ r.titulo }}</a></div>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

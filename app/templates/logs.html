@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<style>
+  .logs-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .logs-count { color:var(--muted); font-size:.92rem; }
+  .log-event-badge {
+    display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px;
+    background:rgba(99,102,241,.14); border:1px solid rgba(99,102,241,.28);
+    font-size:.76rem; font-weight:700; letter-spacing:.02em;
+  }
+  .log-detail { max-width:520px; white-space:normal; word-break:break-word; }
+  .log-ticket-link { font-weight:600; text-decoration:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="logs-toolbar">
+    <div>
+      <div class="eyebrow">Auditoria</div>
+      <h1>Logs do sistema</h1>
+      <div class="muted">Visualize eventos registrados nos chamados sem alterar as melhorias da V14.2.</div>
+    </div>
+    <div class="logs-count">{{ total }} registro(s) encontrado(s)</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Filtros</h2>
+  <form method="get" class="filters">
+    <div class="grid">
+      <label>Busca
+        <input type="text" name="q" value="{{ filtros.q }}" placeholder="evento, detalhe, título ou número">
+      </label>
+      <label>Evento
+        <select name="evento">
+          <option value="">Todos</option>
+          {% for item in eventos %}
+            <option value="{{ item.evento }}" {% if filtros.evento == item.evento %}selected{% endif %}>{{ item.evento }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>ID do chamado
+        <input type="number" min="1" step="1" name="ticket_id" value="{{ filtros.ticket_id }}" placeholder="Ex: 12">
+      </label>
+      <label>Data inicial
+        <input type="date" name="data_inicio" value="{{ filtros.data_inicio }}">
+      </label>
+      <label>Data final
+        <input type="date" name="data_fim" value="{{ filtros.data_fim }}">
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Filtrar</button>
+      <a class="btn secondary" href="{{ url_for('routes.logs_audit') }}">Limpar</a>
+      <a class="btn secondary" href="{{ url_for('routes.export_logs_pdf', **filtros) }}">Exportar PDF</a>
+      <a class="btn secondary" href="{{ url_for('routes.export_logs_excel', **filtros) }}">Exportar Excel</a>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Últimos registros</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Chamado</th>
+          <th>Evento</th>
+          <th>Detalhe</th>
+          <th>Status atual</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if logs|length == 0 %}
+          <tr>
+            <td colspan="5" class="muted">Nenhum log encontrado para os filtros informados.</td>
+          </tr>
+        {% endif %}
+        {% for log in logs %}
+          <tr>
+            <td>{{ log.criado_em }}</td>
+            <td>
+              {% if log.ticket_id %}
+                <a class="log-ticket-link" href="{{ url_for('routes.ticket_detail', ticket_id=log.ticket_id) }}">
+                  {{ log.numero_chamado or ('#' ~ log.ticket_id) }}
+                </a>
+                <div class="muted">{{ log.titulo or '-' }}</div>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td><span class="log-event-badge">{{ log.evento }}</span></td>
+            <td class="log-detail">{{ log.detalhe or '-' }}</td>
+            <td>{{ log.status or '-' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if total > 500 %}
+    <div class="muted" style="margin-top:12px;">Mostrando os 500 registros mais recentes para manter compatibilidade e desempenho.</div>
+  {% endif %}
+</section>
+{% endblock %}

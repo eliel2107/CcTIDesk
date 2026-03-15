@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <h1>Entradas por NF</h1>
+      <div class="muted">Registre recebimentos de equipamentos e consumíveis de forma ágil.</div>
+    </div>
+    <a class="btn" href="{{ url_for('nf.nf_nova') }}">+ Nova entrada</a>
+  </div>
+</section>
+
+<section class="card">
+  <form method="get" class="filters">
+    <div class="grid">
+      <label>Busca
+        <input name="q" value="{{ filtros.q }}" placeholder="NF / fornecedor / base…">
+      </label>
+      <label>Status
+        <select name="status">
+          <option value="">Todos</option>
+          <option value="RASCUNHO"   {% if filtros.status=='RASCUNHO'   %}selected{% endif %}>Rascunho</option>
+          <option value="CONFIRMADA" {% if filtros.status=='CONFIRMADA' %}selected{% endif %}>Confirmada</option>
+          <option value="CANCELADA"  {% if filtros.status=='CANCELADA'  %}selected{% endif %}>Cancelada</option>
+        </select>
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Filtrar</button>
+      <a class="btn secondary" href="{{ url_for('nf.nf_list') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  {% if entradas|length == 0 %}
+    <div class="muted">Nenhuma entrada encontrada.</div>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>NF</th><th>OC</th><th>Fornecedor</th><th>Base destino</th>
+        <th>Itens</th><th>Unidades</th><th>Status</th><th>Data</th><th></th>
+      </tr></thead>
+      <tbody>
+        {% for e in entradas %}
+        <tr>
+          <td><a href="{{ url_for('nf.nf_detail', eid=e.id) }}" style="font-weight:700;">{{ e.numero_nf }}</a></td>
+          <td class="muted">{{ e.numero_oc or '—' }}</td>
+          <td>{{ e.fornecedor or '—' }}</td>
+          <td>{{ e.base_destino or '—' }}</td>
+          <td style="font-family:monospace;font-weight:700;">{{ e.total_itens or 0 }}</td>
+          <td style="font-family:monospace;font-weight:700;">{{ e.total_unidades or 0 }}</td>
+          <td>
+            {% if e.status == 'RASCUNHO' %}
+              <span class="pill pill-pending">Rascunho</span>
+            {% elif e.status == 'CONFIRMADA' %}
+              <span class="pill pill-done">Confirmada</span>
+            {% else %}
+              <span class="pill pill-archived">Cancelada</span>{% if e.expira_em %}<div class="muted" style="font-size:11px;margin-top:4px;">Some em {{ e.expira_em[2:16] }}</div>{% endif %}
+            {% endif %}
+          </td>
+          <td style="font-size:12px;font-family:monospace;color:var(--muted);">{{ e.criado_em[2:16] }}</td>
+          <td>
+            {% if e.status == 'RASCUNHO' %}
+              <a class="btn secondary" href="{{ url_for('nf.nf_itens', eid=e.id) }}" style="padding:5px 10px;font-size:12px;">Continuar →</a>
+            {% else %}
+              <a class="btn ghost" href="{{ url_for('nf.nf_detail', eid=e.id) }}" style="padding:5px 10px;font-size:12px;">Ver</a>
+            {% endif %}
+            {% if g.user.role == 'admin' and e.status != 'CONFIRMADA' %}
+              <form method="post" action="{{ url_for('nf.nf_excluir', eid=e.id) }}" style="margin:6px 0 0 0;" onsubmit="return confirm('Excluir esta NF?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn ghost" type="submit" style="padding:5px 10px;font-size:12px;color:var(--bad);">Excluir</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

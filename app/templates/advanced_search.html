@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>🔎 Busca avançada</h1>
+  <form method="get" action="{{ url_for('routes.advanced_search') }}" class="form">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+      <label>Texto <input name="q" value="{{ filters.q }}" placeholder="título, solicitante, nº..."></label>
+      <label>Status
+        <select name="status">
+          <option value="">Todos</option>
+          {% for s in STATUSES %}<option value="{{ s }}" {% if filters.status==s %}selected{% endif %}>{{ s.replace('_',' ') }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Categoria
+        <select name="categoria_id">
+          <option value="">Todas</option>
+          {% for c in categories %}<option value="{{ c.id }}" {% if filters.categoria_id==c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Classificação
+        <select name="classificacao">
+          <option value="">Todas</option>
+          {% for cl in CLASSIFICATIONS %}<option value="{{ cl }}" {% if filters.classificacao==cl %}selected{% endif %}>{{ cl }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Responsável <input name="responsavel" value="{{ filters.responsavel }}"></label>
+      <label>Data início <input type="date" name="data_inicio" value="{{ filters.data_inicio }}"></label>
+      <label>Data fim <input type="date" name="data_fim" value="{{ filters.data_fim }}"></label>
+    </div>
+    <div class="actions" style="margin-top:12px;">
+      <button class="btn" type="submit">Buscar</button>
+      <a class="btn secondary" href="{{ url_for('routes.advanced_search') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+{% if results is not none %}
+<section class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <h2 style="margin:0;">{{ results|length }} resultado(s)</h2>
+  </div>
+  {% if results|length == 0 %}
+    <div class="muted">Nenhum chamado encontrado com esses filtros.</div>
+  {% else %}
+  <table style="width:100%;border-collapse:collapse;font-size:.88rem;">
+    <thead><tr style="border-bottom:2px solid var(--border);">
+      <th style="text-align:left;padding:8px;">Nº</th>
+      <th style="text-align:left;padding:8px;">Título</th>
+      <th style="text-align:left;padding:8px;">Categoria</th>
+      <th style="text-align:left;padding:8px;">Status</th>
+      <th style="text-align:left;padding:8px;">Responsável</th>
+      <th style="text-align:left;padding:8px;">SLA</th>
+      <th style="text-align:left;padding:8px;">Atualizado</th>
+    </tr></thead>
+    <tbody>
+    {% for t in results %}
+      {% set sla = t.sla_deadline %}
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px;"><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.numero_chamado or ('#'+t.id|string) }}</a></td>
+        <td style="padding:8px;">{{ t.titulo }}</td>
+        <td style="padding:8px;">
+          {% if t.categoria_nome %}<span class="pill" style="background:{{ t.categoria_cor }};color:#fff;font-size:.75rem;">{{ t.categoria_nome }}</span>{% else %}—{% endif %}
+        </td>
+        <td style="padding:8px;"><span class="pill" style="font-size:.75rem;">{{ t.status.replace('_',' ') }}</span></td>
+        <td style="padding:8px;">{{ t.responsavel or '—' }}</td>
+        <td style="padding:8px;">
+          {% if sla %}<span style="font-size:.8rem;color:var(--muted);">{{ sla[:16] }}</span>{% else %}—{% endif %}
+        </td>
+        <td style="padding:8px;color:var(--muted);font-size:.82rem;">{{ t.atualizado_em[:16] }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

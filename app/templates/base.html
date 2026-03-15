@@ -6,6 +6,7 @@
   <title>{{ title or "Chamados - Compras & Envio" }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  {% block head_extra %}{% endblock %}
 </head>
 <body>
 {% if g.user %}
@@ -14,7 +15,6 @@
       <div class="brand">Chamados</div>
       <div class="subtitle">Compras • Envios • Ativos</div>
     </div>
-
     <nav class="sidebar-nav">
       {% if g.user["role"] == "solicitante" %}
         <div class="side-group">
@@ -34,23 +34,32 @@
           <a href="{{ url_for('routes.queue') }}"><span class="nav-ico">📥</span><span>Fila</span></a>
           <a href="{{ url_for('routes.index') }}"><span class="nav-ico">🧾</span><span>Chamados</span></a>
           <a href="{{ url_for('routes.kanban') }}"><span class="nav-ico">🗂️</span><span>Kanban</span></a>
-          <a href="{{ url_for('routes.global_search') }}"><span class="nav-ico">🔎</span><span>Busca</span></a>
+          <a href="{{ url_for('kb.kb_index') }}"><span class="nav-ico">📚</span><span>Conhecimento</span></a>
         </div>
         <div class="side-group">
           <div class="side-title">Patrimônio</div>
           <a href="{{ url_for('assets_admin.assets') }}"><span class="nav-ico">💻</span><span>Ativos</span></a>
           <a href="{{ url_for('assets_admin.assets_dashboard') }}"><span class="nav-ico">📈</span><span>Dashboard Ativos</span></a>
+          <a href="{{ url_for('stock.stock_home') }}"><span class="nav-ico">📦</span><span>Estoque</span></a>
+          <a href="{{ url_for('nf.nf_list') }}"><span class="nav-ico">🧾</span><span>Entradas NF</span></a>
+          <a href="{{ url_for('catalogo.catalogo_list') }}"><span class="nav-ico">🗂</span><span>Catálogo</span></a>
         </div>
         <div class="side-group">
           <div class="side-title">Sistema</div>
+          <a href="{{ url_for('routes.advanced_search') }}"><span class="nav-ico">🔎</span><span>Busca avançada</span></a>
           <a href="{{ url_for('api.docs') }}"><span class="nav-ico">🧩</span><span>API</span></a>
           {% if g.user["role"] == "admin" %}
             <a href="{{ url_for('admin.users') }}"><span class="nav-ico">👥</span><span>Usuários</span></a>
+            <a href="{{ url_for('admin.categories') }}"><span class="nav-ico">🏷️</span><span>Categorias</span></a>
+            <a href="{{ url_for('routes.groups_list') }}"><span class="nav-ico">🫂</span><span>Grupos</span></a>
+            <a href="{{ url_for('routes.aprovacoes') }}"><span class="nav-ico">✅</span><span>Aprovações</span></a>
+            <a href="{{ url_for('routes.recurring_list') }}"><span class="nav-ico">🔁</span><span>Recorrentes</span></a>
+            <a href="{{ url_for('routes.logs_audit') }}"><span class="nav-ico">📝</span><span>Logs</span></a>
+            <a href="{{ url_for('routes.webhooks_list') }}"><span class="nav-ico">🔗</span><span>Webhooks</span></a>
           {% endif %}
         </div>
       {% endif %}
     </nav>
-
     <div class="sidebar-user">
       {% if g.user["role"] in ["admin", "operador"] %}
         <a class="btn" href="{{ url_for('routes.new_ticket') }}">+ Novo</a>
@@ -72,6 +81,30 @@
       <div class="topbar-page">
         <div class="topbar-title">{% if g.user["role"] == "solicitante" %}Portal do solicitante{% else %}{{ title or "Painel" }}{% endif %}</div>
         <div class="topbar-subtitle">{% if g.user["role"] == "solicitante" %}Abra e acompanhe os seus chamados{% else %}Sistema interno de gestão operacional{% endif %}</div>
+      </div>
+      <div class="topbar-actions">
+        {# ── Busca global ⌘K ── #}
+        {% if g.user.role in ('admin','operador') %}
+        <button class="search-trigger" id="searchTrigger" title="Busca rápida (Ctrl+K)">
+          🔍 <span class="search-trigger-hint">Ctrl+K</span>
+        </button>
+        {% endif %}
+
+        <div class="notif-bell" id="notifBell">
+          <button class="notif-btn" id="notifToggle" aria-label="Notificações">
+            🔔
+            <span class="notif-badge" id="notifCount" style="display:none">0</span>
+          </button>
+          <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header">
+              <span>Notificações</span>
+              <button class="notif-mark-all" id="markAllRead">Marcar todas como lidas</button>
+            </div>
+            <div class="notif-list" id="notifList">
+              <div class="notif-empty">Sem notificações.</div>
+            </div>
+          </div>
+        </div>
       </div>
     {% else %}
       <div class="container topbar-inner">
@@ -103,5 +136,256 @@
     </footer>
   {% endif %}
 </div>
+
+{% if g.user %}
+<style>
+.topbar-actions { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.notif-bell { position:relative; }
+.notif-btn {
+  background:none; border:none; cursor:pointer; font-size:1.3rem;
+  padding:6px 8px; border-radius:8px; position:relative; color:inherit;
+  line-height:1; transition:background .15s;
+}
+.notif-btn:hover { background:rgba(255,255,255,.08); }
+.notif-badge {
+  position:absolute; top:2px; right:2px; background:#ef4444; color:#fff;
+  font-size:.62rem; font-weight:700; min-width:16px; height:16px;
+  border-radius:8px; display:flex; align-items:center; justify-content:center;
+  padding:0 4px; pointer-events:none;
+}
+.notif-dropdown {
+  display:none; position:absolute; right:0; top:calc(100% + 6px);
+  width:340px; max-height:480px;
+  background:var(--card,#1a2035); border:1px solid var(--border,#2a3042);
+  border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,.4);
+  z-index:9999; overflow:hidden; flex-direction:column;
+}
+.notif-dropdown.open { display:flex; }
+.notif-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-bottom:1px solid var(--border,#2a3042);
+  font-weight:600; font-size:.9rem;
+}
+.notif-mark-all {
+  background:none; border:none; cursor:pointer;
+  font-size:.78rem; color:var(--accent,#6366f1); padding:2px 6px; border-radius:4px;
+}
+.notif-mark-all:hover { text-decoration:underline; }
+.notif-list { overflow-y:auto; flex:1; }
+.notif-empty { padding:24px 16px; text-align:center; color:var(--muted,#8892a4); font-size:.9rem; }
+.notif-item {
+  display:flex; gap:10px; padding:12px 16px;
+  border-bottom:1px solid var(--border,#2a3042);
+  cursor:pointer; transition:background .12s;
+  text-decoration:none; color:inherit;
+}
+.notif-item:hover { background:rgba(255,255,255,.04); }
+.notif-item.unread { background:rgba(99,102,241,.07); }
+.notif-item.unread:hover { background:rgba(99,102,241,.12); }
+.notif-ico { font-size:1.2rem; flex-shrink:0; margin-top:1px; }
+.notif-body { flex:1; min-width:0; }
+.notif-title { font-weight:600; font-size:.85rem; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.notif-msg { font-size:.8rem; color:var(--muted,#8892a4); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.notif-time { font-size:.72rem; color:var(--muted,#8892a4); margin-top:3px; }
+.notif-dot { width:7px; height:7px; border-radius:50%; background:#6366f1; flex-shrink:0; margin-top:5px; }
+</style>
+
+{% if g.user.role in ('admin','operador') %}
+<!-- ⌘K Global Search Overlay -->
+<div id="cmdkOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-start;justify-content:center;padding-top:10vh;">
+  <div id="cmdkModal" style="background:var(--surface,#1a2035);border:1px solid var(--border,#2a3042);border-radius:14px;width:min(620px,94vw);box-shadow:0 24px 64px rgba(0,0,0,.45);overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,#2a3042);">
+      <span style="font-size:1.1rem;opacity:.5;">🔍</span>
+      <input id="cmdkInput" type="text" placeholder="Buscar chamados, artigos, usuários…" autocomplete="off"
+             style="flex:1;background:transparent;border:none;outline:none;font-size:1rem;color:inherit;font-family:inherit;">
+      <kbd onclick="cmdkClose()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:5px;padding:2px 8px;font-size:.72rem;color:var(--muted,#8892a4);cursor:pointer;font-family:monospace;">Esc</kbd>
+    </div>
+    <div id="cmdkResults" style="max-height:380px;overflow-y:auto;"></div>
+    <div style="display:flex;gap:16px;padding:8px 18px;border-top:1px solid var(--border,#2a3042);background:rgba(0,0,0,.15);">
+      <span style="font-size:.73rem;color:var(--muted,#8892a4);"><kbd style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:1px 5px;font-size:.68rem;font-family:monospace;">↑↓</kbd> navegar</span>
+      <span style="font-size:.73rem;color:var(--muted,#8892a4);"><kbd style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:1px 5px;font-size:.68rem;font-family:monospace;">Enter</kbd> abrir</span>
+      <span style="font-size:.73rem;color:var(--muted,#8892a4);"><kbd style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:1px 5px;font-size:.68rem;font-family:monospace;">Esc</kbd> fechar</span>
+    </div>
+  </div>
+</div>
+<style>
+.cmdk-item{display:flex;align-items:center;gap:12px;padding:11px 18px;cursor:pointer;text-decoration:none;color:inherit;border-bottom:1px solid rgba(255,255,255,.04);}
+.cmdk-item:hover,.cmdk-item.cmdk-active{background:rgba(99,102,241,.15);}
+.cmdk-item-label{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cmdk-item-sub{font-size:.75rem;color:var(--muted,#8892a4);}
+.cmdk-empty{padding:28px;text-align:center;color:var(--muted,#8892a4);font-size:.9rem;}
+.cmdk-group-hdr{padding:6px 18px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#8892a4);background:rgba(255,255,255,.02);}
+.search-trigger{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--muted,#8892a4);cursor:pointer;display:flex;align-items:center;gap:6px;padding:5px 10px;font-size:.82rem;transition:all .15s;}
+.search-trigger:hover{background:rgba(99,102,241,.15);color:var(--fg,#e2e8f0);border-color:var(--accent,#6366f1);}
+.search-trigger-hint{font-size:.7rem;opacity:.6;}
+</style>
+<script>
+var _cmdk = (function(){
+  var overlay=document.getElementById('cmdkOverlay'),
+      input=document.getElementById('cmdkInput'),
+      results=document.getElementById('cmdkResults'),
+      timer, activeIdx=-1, anchors=[];
+  var ICONS={ticket:'🎫',kb:'📚',user:'👤'};
+  var LABELS={ticket:'Chamados',kb:'Conhecimento',user:'Usuários'};
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function open(){overlay.style.display='flex';input.value='';results.innerHTML='';activeIdx=-1;anchors=[];setTimeout(function(){input.focus();},50);}
+  function close(){overlay.style.display='none';}
+  function setActive(i){
+    anchors=Array.from(results.querySelectorAll('.cmdk-item'));
+    if(!anchors.length)return;
+    activeIdx=(i%anchors.length+anchors.length)%anchors.length;
+    anchors.forEach(function(a,j){a.classList.toggle('cmdk-active',j===activeIdx);});
+    anchors[activeIdx].scrollIntoView({block:'nearest'});
+  }
+  function render(res){
+    if(!res.length){results.innerHTML='<div class="cmdk-empty">Nenhum resultado.</div>';return;}
+    var groups={};
+    res.forEach(function(r){if(!groups[r.type])groups[r.type]=[];groups[r.type].push(r);});
+    var html='';
+    Object.keys(groups).forEach(function(t){
+      html+='<div class="cmdk-group-hdr">'+(LABELS[t]||t)+'</div>';
+      groups[t].forEach(function(r){
+        html+='<a class="cmdk-item" href="'+esc(r.url)+'" data-url="'+esc(r.url)+'">'
+          +'<span style="font-size:1rem;width:22px;text-align:center;flex-shrink:0;">'+(ICONS[r.type]||'•')+'</span>'
+          +'<div style="flex:1;min-width:0;">'
+          +'<div class="cmdk-item-label">'+esc(r.label)+'</div>'
+          +'<div class="cmdk-item-sub">'+esc(r.sub)+'</div>'
+          +'</div></a>';
+      });
+    });
+    results.innerHTML=html;activeIdx=-1;anchors=[];
+  }
+  input.addEventListener('input',function(){
+    clearTimeout(timer);
+    var q=input.value.trim();
+    if(q.length<2){results.innerHTML='';return;}
+    timer=setTimeout(async function(){
+      try{var r=await fetch('/api/search?q='+encodeURIComponent(q));render((await r.json()).results||[]);}
+      catch(e){results.innerHTML='<div class="cmdk-empty">Erro na busca.</div>';}
+    },200);
+  });
+  overlay.addEventListener('click',function(e){if(e.target===overlay)close();});
+  document.addEventListener('keydown',function(e){
+    var open=(overlay.style.display!=='none');
+    if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();open?close():window._cmdk.open();return;}
+    if(!open)return;
+    if(e.key==='Escape'){close();return;}
+    if(e.key==='ArrowDown'){e.preventDefault();setActive(activeIdx+1);return;}
+    if(e.key==='ArrowUp'){e.preventDefault();setActive(activeIdx-1);return;}
+    if(e.key==='Enter'&&activeIdx>=0&&anchors[activeIdx]){window.location.href=anchors[activeIdx].dataset.url;}
+  });
+  var trigger=document.getElementById('searchTrigger');
+  if(trigger)trigger.addEventListener('click',open);
+  return {open:open,close:close};
+})();
+window.cmdkClose=_cmdk.close;
+</script>
+{% endif %}
+
+<script>
+(function(){
+  var ICONS = {
+    NOVO_CHAMADO:        '📥',
+    CHAMADO_ASSUMIDO:    '👤',
+    STATUS_ATUALIZADO:   '🔄',
+    AGUARD_CONFIRMACAO:  '✅',
+    CONCLUSAO_REJEITADA: '↩️',
+    CHAMADO_CONCLUIDO:   '🎉'
+  };
+
+  function relTime(s) {
+    var diff = Math.floor((Date.now() - new Date(s.replace(' ','T'))) / 1000);
+    if (diff < 60)    return 'agora mesmo';
+    if (diff < 3600)  return Math.floor(diff/60) + 'min atrás';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h atrás';
+    return Math.floor(diff/86400) + 'd atrás';
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderNotifs(data) {
+    var list  = document.getElementById('notifList');
+    var badge = document.getElementById('notifCount');
+    if (!list) return;
+    var n = data.nao_lidas;
+    badge.textContent = n > 9 ? '9+' : n;
+    badge.style.display = n > 0 ? 'flex' : 'none';
+    if (!data.notificacoes.length) {
+      list.innerHTML = '<div class="notif-empty">Sem notificações.</div>';
+      return;
+    }
+    list.innerHTML = data.notificacoes.map(function(n) {
+      var ico  = ICONS[n.tipo] || '🔔';
+      var url  = n.ticket_id ? '/tickets/' + n.ticket_id : '#';
+      var cls  = n.lida ? '' : ' unread';
+      var dot  = n.lida ? '' : '<span class="notif-dot"></span>';
+      var msg  = n.mensagem ? '<div class="notif-msg">' + esc(n.mensagem) + '</div>' : '';
+      return '<a class="notif-item' + cls + '" href="' + url + '" data-id="' + n.id + '">'
+        + '<span class="notif-ico">' + ico + '</span>'
+        + '<div class="notif-body">'
+        + '<div class="notif-title">' + esc(n.titulo) + '</div>'
+        + msg
+        + '<div class="notif-time">' + relTime(n.criado_em) + '</div>'
+        + '</div>' + dot + '</a>';
+    }).join('');
+  }
+
+  async function fetchNotifs() {
+    try {
+      var r = await fetch('/api/notificacoes');
+      if (r.ok) renderNotifs(await r.json());
+    } catch(e) {}
+  }
+
+  function csrf() {
+    var m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.content : '';
+  }
+
+  var toggle   = document.getElementById('notifToggle');
+  var dropdown = document.getElementById('notifDropdown');
+  var list     = document.getElementById('notifList');
+  var markAll  = document.getElementById('markAllRead');
+
+  toggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+    if (dropdown.classList.contains('open')) fetchNotifs();
+  });
+  document.addEventListener('click', function(e) {
+    if (!dropdown.contains(e.target) && e.target !== toggle)
+      dropdown.classList.remove('open');
+  });
+
+  list.addEventListener('click', async function(e) {
+    var item = e.target.closest('.notif-item[data-id]');
+    if (!item) return;
+    await fetch('/api/notificacoes/' + item.dataset.id + '/ler',
+      { method:'POST', headers:{'X-CSRFToken': csrf()} });
+    item.classList.remove('unread');
+    var dot = item.querySelector('.notif-dot');
+    if (dot) dot.remove();
+    var badge = document.getElementById('notifCount');
+    var cur = parseInt(badge.textContent) || 0;
+    var next = Math.max(0, cur - 1);
+    badge.textContent = next > 9 ? '9+' : next;
+    badge.style.display = next > 0 ? 'flex' : 'none';
+  });
+
+  markAll.addEventListener('click', async function(e) {
+    e.stopPropagation();
+    await fetch('/api/notificacoes/ler-todas',
+      { method:'POST', headers:{'X-CSRFToken': csrf()} });
+    await fetchNotifs();
+  });
+
+  fetchNotifs();
+  setInterval(fetchNotifs, 30000);
+})();
+</script>
+{% endif %}
+{% block scripts %}{% endblock %}
 </body>
 </html>

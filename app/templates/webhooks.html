@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div><div class="eyebrow">Admin</div><h1>Webhooks</h1>
+    <div class="muted">Receba notificações HTTP quando eventos ocorrerem no sistema.</div></div>
+  </div>
+</section>
+
+{% for h in hooks %}
+<section class="card" style="border-left:4px solid {% if h.ativo %}#22c55e{% else %}#6b7280{% endif %};">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <strong>{{ h.nome }}</strong>
+        {% if h.ativo %}<span class="pill" style="background:#22c55e;color:#000;font-size:.7rem;">ativo</span>{% else %}<span class="pill" style="font-size:.7rem;">inativo</span>{% endif %}
+      </div>
+      <div class="muted" style="font-size:.82rem;word-break:break-all;">{{ h.url }}</div>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">
+        {% for ev in h.eventos|from_json %}
+          <span class="pill" style="font-size:.7rem;background:rgba(99,102,241,.15);">{{ ev }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <form method="post" action="{{ url_for('routes.delete_webhook_route', hook_id=h.id) }}" onsubmit="return confirm('Excluir webhook?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn secondary" type="submit" style="font-size:.8rem;padding:4px 10px;">Excluir</button>
+    </form>
+  </div>
+</section>
+{% endfor %}
+
+<section class="card">
+  <h2>Novo webhook</h2>
+  <form method="post" action="{{ url_for('routes.create_webhook_route') }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nome <input name="nome" required></label>
+    <label>URL <input name="url" type="url" required placeholder="https://..."></label>
+    <label>Secret (opcional) <input name="secret" placeholder="Para validar assinatura HMAC-SHA256"></label>
+    <label>Eventos</label>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-bottom:12px;">
+      {% for ev in WEBHOOK_EVENTS %}
+      <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+        <input type="checkbox" name="eventos" value="{{ ev }}"> {{ ev }}
+      </label>
+      {% endfor %}
+    </div>
+    <div class="actions"><button class="btn" type="submit">Criar webhook</button></div>
+  </form>
+</section>
+{% endblock %}

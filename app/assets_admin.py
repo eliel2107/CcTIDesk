@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.auth import login_required, role_required
 from app.services.asset_service import (
-    list_assets, get_asset, create_asset, update_asset,
+    list_assets, get_asset, create_asset, update_asset, delete_asset,
     ASSET_TYPES, ASSET_STATUSES, tickets_by_asset, asset_dashboard
 )
 
@@ -74,3 +74,15 @@ def edit_asset_route(asset_id: int):
     except Exception as e:
         flash(str(e), "error")
     return redirect(url_for("assets_admin.asset_detail", asset_id=asset_id))
+@bp.post("/<int:asset_id>/deletar")
+@login_required
+@role_required("admin")
+def delete_asset_route(asset_id: int):
+    asset = get_asset(asset_id)
+    if not asset:
+        flash("Ativo não encontrado.", "error")
+        return redirect(url_for("assets_admin.assets"))
+    tag = asset["tag"]
+    delete_asset(asset_id)
+    flash(f"Ativo {tag} excluído permanentemente.", "success")
+    return redirect(url_for("assets_admin.assets"))

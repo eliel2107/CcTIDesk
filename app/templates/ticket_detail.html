@@ -1,119 +1,213 @@
 {% extends "base.html" %}
 {% block content %}
+
+{% set is_locked = ticket.status in ('AGUARDANDO_CONFIRMACAO', 'CONCLUIDO', 'CANCELADO', 'AGUARDANDO_INFO') %}
+{% set is_pending = ticket.status == 'AGUARDANDO_CONFIRMACAO' %}
+{% set is_waiting_info = ticket.status == 'AGUARDANDO_INFO' %}
+{% set is_staff = g.user and g.user.role in ('admin', 'operador') %}
+{% set is_requester = g.user and g.user.role == 'solicitante' %}
+{% set is_opener = g.user and ticket.requester_user_id == g.user.id %}
+{% set can_confirm = is_opener or (g.user and g.user.role == 'admin') %}
+
 <section class="card">
   <div class="detail-head">
     <div>
-      <div class="eyebrow">Chamado</div>
-      <h1>#{{ ticket.id }} • {{ ticket.titulo }}</h1>
+      <div class="eyebrow" style="display:flex;align-items:center;gap:8px;">
+        {% if ticket.numero_chamado %}
+          {% if ticket.classificacao == 'INCIDENTE' %}
+            <span class="badge-classif inc">INC</span>
+          {% else %}
+            <span class="badge-classif req">REQ</span>
+          {% endif %}
+          <span style="font-weight:700;letter-spacing:.03em;">{{ ticket.numero_chamado }}</span>
+          <span class="muted">•</span>
+        {% endif %}
+        <span class="muted">Chamado #{{ ticket.id }}</span>
+      </div>
+      <h1>{{ ticket.titulo }}</h1>
       <div class="muted">Criado em {{ ticket.criado_em }} • Atualizado em {{ ticket.atualizado_em }}</div>
     </div>
     <div class="badges">
-      <span class="pill">{{ ticket.tipo }}</span>
       <span class="pill">{{ ticket.prioridade }}</span>
-      <span class="pill">{{ ticket.status }}</span>
+      <span class="pill {% if is_pending %}pill-pending{% elif ticket.status == 'CONCLUIDO' %}pill-done{% endif %}">{{ ticket.status.replace('_',' ') }}</span>
       {% if ticket.data_limite %}<span class="pill">⏰ {{ ticket.data_limite }}</span>{% endif %}
+      {% if categoria %}<span class="pill" style="background:{{ categoria.cor }};color:#fff;">🏷️ {{ categoria.nome }}</span>{% endif %}
     </div>
   </div>
+
+  {% if ticket.sla_deadline and sla_status != 'none' %}
+  <div class="sla-bar sla-{{ sla_status }}" style="margin-top:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span>
+        {% if sla_status == 'breach' %}⚠️ <strong>SLA vencido</strong> — prazo era {{ ticket.sla_deadline[:16] }}
+        {% elif sla_status == 'warning' %}🕐 <strong>SLA em risco</strong> — vence em {{ ticket.sla_deadline[:16] }}
+        {% else %}✅ <strong>SLA no prazo</strong> — vence em {{ ticket.sla_deadline[:16] }}
+        {% endif %}
+      </span>
+      <span class="muted" style="font-size:.78rem;">Aberto: {{ ticket.criado_em[:16] }}</span>
+    </div>
+    <div style="background:rgba(0,0,0,.2);border-radius:99px;height:6px;overflow:hidden;">
+      <div id="sla-progress-bar" style="height:100%;border-radius:99px;transition:width .4s;
+        background:{% if sla_status == 'breach' %}#ef4444{% elif sla_status == 'warning' %}#f59e0b{% else %}#22c55e{% endif %};
+        width:0%;">
+      </div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    var criado  = new Date("{{ ticket.criado_em[:19] }}".replace(' ','T'));
+    var prazo   = new Date("{{ ticket.sla_deadline[:19] }}".replace(' ','T'));
+    var agora   = new Date();
+    var total   = prazo - criado;
+    var decorrido = agora - criado;
+    var pct = total > 0 ? Math.min(100, Math.round((decorrido / total) * 100)) : 100;
+    var bar = document.getElementById('sla-progress-bar');
+    if (bar) bar.style.width = pct + '%';
+  })();
+  </script>
+  {% endif %}
 </section>
 
-{# ── Banner de status para solicitante ── #}
-{% if g.user and g.user.role == 'solicitante' %}
-  {% if ticket.assigned_user_id %}
-    <div class="alert-assigned">
-      🔒 <strong>Chamado em atendimento.</strong>
-      Este chamado foi assumido por <strong>{{ ticket.responsavel or "um operador" }}</strong> e está sendo tratado.
-      Você não pode editá-lo neste momento.
+{# ── Banner: Aguardando info — aviso para staff ── #}
+{% if is_waiting_info and is_staff %}
+<div class="alert-info-staff">
+  <div>
+    ⚠️ <strong>Chamado devolvido ao solicitante.</strong>
+    {% if ticket.motivo_devolucao %}
+    O solicitante foi notificado com o seguinte pedido:<br>
+    <em style="display:block;margin-top:6px;padding:8px 12px;background:rgba(0,0,0,.06);border-radius:6px;">{{ ticket.motivo_devolucao }}</em>
+    {% endif %}
+  </div>
+  <div class="muted" style="margin-top:8px;font-size:.85rem;">O chamado está bloqueado para edição até o solicitante reenviar.</div>
+</div>
+{% endif %}
+
+{# ── Banner: Aguardando info — formulário para solicitante ── #}
+{% if is_waiting_info and (is_opener or is_requester) %}
+<div class="alert-info-requester">
+  <div>
+    📋 <strong>O operador precisa de mais informações para continuar seu chamado.</strong>
+    {% if ticket.motivo_devolucao %}
+    <div style="margin-top:8px;padding:10px 14px;background:rgba(0,0,0,.06);border-radius:8px;">
+      <div class="muted" style="font-size:.78rem;margin-bottom:4px;">O que foi pedido:</div>
+      <strong>{{ ticket.motivo_devolucao }}</strong>
     </div>
+    {% endif %}
+  </div>
+  <form method="post" action="{{ url_for('routes.reenviar_ticket_route', ticket_id=ticket.id) }}" class="form" style="margin-top:14px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Suas informações complementares <span style="color:#ef4444;">*</span>
+      <textarea name="complemento" rows="4" required placeholder="Adicione aqui as informações solicitadas pelo operador..."
+                style="resize:vertical;border:2px solid #f59e0b;"></textarea>
+    </label>
+    <div class="actions" style="margin-top:6px;">
+      <button class="btn btn-reenviar" type="submit">📤 Enviar informações e reabrir chamado</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% if is_pending %}
+  {% if can_confirm %}
+  <div class="alert-pending">
+    <div>✅ <strong>O operador finalizou o atendimento.</strong> Por favor, confirme se o chamado foi resolvido ou rejeite caso ainda haja pendências.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+      <form method="post" action="{{ url_for('routes.confirmar_ticket_route', ticket_id=ticket.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit" onclick="return confirm('Confirmar conclusão do chamado?')">✔ Confirmar conclusão</button>
+      </form>
+      <form method="post" action="{{ url_for('routes.rejeitar_ticket_route', ticket_id=ticket.id) }}" style="display:flex;gap:8px;align-items:center;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input name="motivo" placeholder="Motivo (opcional)" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border,#2a3042);background:var(--surface);color:inherit;font-size:.9rem;min-width:200px;">
+        <button class="btn secondary" type="submit">✖ Rejeitar</button>
+      </form>
+    </div>
+  </div>
+  {% elif is_staff %}
+  <div class="alert-pending">
+    🕐 <strong>Aguardando confirmação de quem abriu o chamado.</strong>
+    O chamado está bloqueado para edição.
+  </div>
+  {% endif %}
+{% elif is_requester %}
+  {% if ticket.status == 'CONCLUIDO' %}
+  <div class="alert-concluido">
+    🎉 <strong>Chamado concluído!</strong>
+    Este chamado foi encerrado em {{ ticket.closed_em or ticket.atualizado_em }}.
+    Atendido por <strong>{{ ticket.responsavel or "–" }}</strong>.
+    Verifique abaixo o histórico completo do atendimento.
+  </div>
+  {% elif ticket.status == 'CANCELADO' %}
+  <div class="alert-cancelado">
+    🚫 <strong>Chamado cancelado.</strong> Este chamado foi encerrado sem resolução.
+  </div>
+  {% elif ticket.assigned_user_id %}
+  <div class="alert-assigned">🔒 <strong>Chamado em atendimento.</strong> Assumido por <strong>{{ ticket.responsavel or "um operador" }}</strong>.</div>
   {% else %}
-    <div class="alert-open">
-      📬 <strong>Aguardando atribuição.</strong>
-      Seu chamado ainda não foi assumido por nenhum operador. Você pode adicionar anexos enquanto aguarda.
-    </div>
+  <div class="alert-open">📬 <strong>Aguardando atribuição.</strong> Você pode adicionar anexos enquanto aguarda.</div>
   {% endif %}
 {% endif %}
 
 <section class="layout-premium">
   <div class="main-pane">
+
     <section class="card">
-      <h2>Resumo executivo</h2>
+      <h2>Resumo</h2>
       <div class="summary-grid">
-        <div class="summary-box"><span>Solicitante</span><strong>{{ ticket.solicitante or "-" }}</strong></div>
+        <div class="summary-box"><span>Solicitante</span><strong>{{ ticket.solicitante or "–" }}</strong></div>
         <div class="summary-box"><span>Responsável</span><strong>{{ ticket.responsavel or "Aguardando operador" }}</strong></div>
-        <div class="summary-box"><span>Fornecedor</span><strong>{{ ticket.fornecedor or "-" }}</strong></div>
-        <div class="summary-box"><span>Centro de custo</span><strong>{{ ticket.centro_custo or "-" }}</strong></div>
-        <div class="summary-box"><span>Valor estimado</span><strong>{% if ticket.valor_estimado is not none %}R$ {{ "%.2f"|format(ticket.valor_estimado) }}{% else %}-{% endif %}</strong></div>
-        <div class="summary-box"><span>Rastreio</span><strong>{{ ticket.codigo_rastreio or "-" }}</strong></div>
+        <div class="summary-box"><span>Fornecedor</span><strong>{{ ticket.fornecedor or "–" }}</strong></div>
+        <div class="summary-box"><span>Centro de custo</span><strong>{{ ticket.centro_custo or "–" }}</strong></div>
+        <div class="summary-box"><span>Valor estimado</span><strong>{% if ticket.valor_estimado is not none %}R$ {{ "%.2f"|format(ticket.valor_estimado) }}{% else %}–{% endif %}</strong></div>
+        <div class="summary-box"><span>Rastreio</span><strong>{{ ticket.codigo_rastreio or "–" }}</strong></div>
       </div>
       <h3>Descrição</h3>
-      <p style="white-space: pre-wrap;">{{ ticket.descricao or "-" }}</p>
+      <p style="white-space:pre-wrap;">{{ ticket.descricao or "–" }}</p>
       <h3>Ativo vinculado</h3>
-      {% if asset %}<p><a href="{{ url_for('assets_admin.asset_detail', asset_id=asset.id) }}">#{{ asset.id }} • {{ asset.tag }} • {{ asset.modelo }}</a></p>{% else %}<p>-</p>{% endif %}
+      {% if asset %}<p><a href="{{ url_for('assets_admin.asset_detail', asset_id=asset.id) }}">#{{ asset.id }} • {{ asset.tag }} • {{ asset.modelo }}</a></p>{% else %}<p>–</p>{% endif %}
       <h3>Link do pedido</h3>
-      {% if ticket.link_pedido %}<p><a href="{{ ticket.link_pedido }}" target="_blank" rel="noopener">Abrir link</a></p>{% else %}<p>-</p>{% endif %}
+      {% if ticket.link_pedido %}<p><a href="{{ ticket.link_pedido }}" target="_blank" rel="noopener">Abrir link</a></p>{% else %}<p>–</p>{% endif %}
     </section>
 
-    {# ── Checklist: admin/operador gerenciam; solicitante vê somente leitura ── #}
     <section class="card">
       <h2>Checklist de etapas</h2>
-      {% if g.user and g.user.role in ['admin', 'operador'] %}
-        <div class="muted">Marque as etapas concluídas. Você também pode editar, adicionar e reordenar.</div>
+      {% if is_staff and not is_locked %}
+        <div class="muted">Marque as etapas concluídas.</div>
         <ul class="checklist">
           {% for s in steps %}
-            <li class="step-row">
-              <form method="post" action="{{ url_for('routes.toggle_step_route', ticket_id=ticket.id, step_id=s.id) }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <label class="check">
-                  <input type="checkbox" name="done" onchange="this.form.submit()" {% if s.done == 1 %}checked{% endif %}>
-                  <span class="{% if s.done == 1 %}done{% endif %}">{{ s.step_order }}. {{ s.step_text }}</span>
-                </label>
-              </form>
-              <div class="step-actions">
-                <form method="post" action="{{ url_for('routes.move_step_route', ticket_id=ticket.id, step_id=s.id) }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="direction" value="up">
-                  <button class="mini" type="submit" title="Subir">↑</button>
-                </form>
-                <form method="post" action="{{ url_for('routes.move_step_route', ticket_id=ticket.id, step_id=s.id) }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="direction" value="down">
-                  <button class="mini" type="submit" title="Descer">↓</button>
-                </form>
-                <form method="post" action="{{ url_for('routes.delete_step_route', ticket_id=ticket.id, step_id=s.id) }}" onsubmit="return confirm('Remover esta etapa?');">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="mini danger" type="submit" title="Remover">✕</button>
-                </form>
-              </div>
-            </li>
+          <li class="step-row">
+            <form method="post" action="{{ url_for('routes.toggle_step_route', ticket_id=ticket.id, step_id=s.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label class="check">
+                <input type="checkbox" name="done" onchange="this.form.submit()" {% if s.done == 1 %}checked{% endif %}>
+                <span class="{% if s.done == 1 %}done{% endif %}">{{ s.step_order }}. {{ s.step_text }}</span>
+              </label>
+            </form>
+            <div class="step-actions">
+              <form method="post" action="{{ url_for('routes.move_step_route', ticket_id=ticket.id, step_id=s.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="direction" value="up"><button class="mini" type="submit">↑</button></form>
+              <form method="post" action="{{ url_for('routes.move_step_route', ticket_id=ticket.id, step_id=s.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="direction" value="down"><button class="mini" type="submit">↓</button></form>
+              <form method="post" action="{{ url_for('routes.delete_step_route', ticket_id=ticket.id, step_id=s.id) }}" onsubmit="return confirm('Remover esta etapa?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="mini danger" type="submit">✕</button></form>
+            </div>
+          </li>
           {% endfor %}
         </ul>
         <form method="post" action="{{ url_for('routes.add_step_route', ticket_id=ticket.id) }}" class="add-step">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input name="text" placeholder="Nova etapa" required>
-          <select name="position">
-            <option value="end">Adicionar no final</option>
-            <option value="before">Adicionar antes da etapa...</option>
-          </select>
-          <select name="ref_step_id">
-            <option value="">(escolher etapa)</option>
-            {% for s in steps %}
-              <option value="{{ s.id }}">{{ s.step_order }}. {{ s.step_text }}</option>
-            {% endfor %}
-          </select>
+          <select name="position"><option value="end">Adicionar no final</option><option value="before">Adicionar antes da etapa...</option></select>
+          <select name="ref_step_id"><option value="">(escolher etapa)</option>{% for s in steps %}<option value="{{ s.id }}">{{ s.step_order }}. {{ s.step_text }}</option>{% endfor %}</select>
           <button class="btn" type="submit">Adicionar etapa</button>
         </form>
       {% else %}
-        <div class="muted">Acompanhe o progresso das etapas abaixo.</div>
+        <div class="muted">Acompanhe o progresso das etapas.</div>
         <ul class="checklist">
           {% for s in steps %}
-            <li class="step-row" style="opacity:.85;">
-              <label class="check" style="pointer-events:none;">
-                <input type="checkbox" {% if s.done == 1 %}checked{% endif %} disabled>
-                <span class="{% if s.done == 1 %}done{% endif %}">{{ s.step_order }}. {{ s.step_text }}</span>
-              </label>
-            </li>
+          <li class="step-row" style="opacity:.85;">
+            <label class="check" style="pointer-events:none;"><input type="checkbox" {% if s.done == 1 %}checked{% endif %} disabled><span class="{% if s.done == 1 %}done{% endif %}">{{ s.step_order }}. {{ s.step_text }}</span></label>
+          </li>
           {% endfor %}
         </ul>
-        {% if steps|length == 0 %}<div class="muted" style="margin-top:8px;">Nenhuma etapa cadastrada ainda.</div>{% endif %}
+        {% if steps|length == 0 %}<div class="muted" style="margin-top:8px;">Nenhuma etapa cadastrada.</div>{% endif %}
       {% endif %}
     </section>
 
@@ -121,122 +215,458 @@
       <h2>Histórico</h2>
       <ul class="timeline">
         {% for l in logs %}
-          <li>
-            <div class="time">{{ l.criado_em }}</div>
-            <div class="event"><strong>{{ l.evento }}</strong><div class="muted">{{ l.detalhe }}</div></div>
-          </li>
+        <li>
+          <div class="time">{{ l.criado_em }}</div>
+          <div class="event"><strong>{{ l.evento }}</strong><div class="muted">{{ l.detalhe }}</div></div>
+        </li>
         {% endfor %}
       </ul>
     </section>
+
   </div>
 
   <aside class="side-pane">
     <section class="card sticky-card">
 
-      {# ═══ PAINEL ADMIN / OPERADOR ═══ #}
-      {% if g.user and g.user.role in ['admin', 'operador'] %}
+      {% if is_staff %}
 
-        <h2>Ações rápidas</h2>
+        {% if not is_locked %}
+        <form method="post" action="{{ url_for('routes.finalizar_ticket_route', ticket_id=ticket.id) }}"
+              onsubmit="return confirm('Finalizar atendimento? O chamado irá para confirmação do solicitante.')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-finalizar" type="submit" style="width:100%;margin-bottom:10px;">✔ Finalizar atendimento</button>
+        </form>
+
+        {# ── Devolver ao solicitante ── #}
+        <details style="margin-bottom:16px;">
+          <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:#f59e0b;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px;">
+            <span>↩</span> Devolver ao solicitante
+          </summary>
+          <form method="post" action="{{ url_for('routes.devolver_ticket_route', ticket_id=ticket.id) }}"
+                class="form" style="margin-top:10px;"
+                onsubmit="return confirm('Devolver este chamado ao solicitante para complemento?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label style="font-size:.85rem;">Informe o que precisa ser complementado <span style="color:#ef4444;">*</span>
+              <textarea name="motivo_devolucao" rows="3" required
+                        placeholder="Ex: Faltou o número de série do equipamento, modelo e localização."
+                        style="resize:vertical;font-size:.85rem;border:1.5px solid #f59e0b;"></textarea>
+            </label>
+            <button class="btn" type="submit" style="background:#f59e0b;color:#000;width:100%;font-size:.85rem;">↩ Devolver ao solicitante</button>
+          </form>
+        </details>
+
+        <h2>Status</h2>
         <form method="post" action="{{ url_for('routes.update_status_route', ticket_id=ticket.id) }}" class="form">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <label>Novo status
             <select name="status" required>
-              {% for s in STATUSES %}<option value="{{ s }}" {% if s == ticket.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+              {% for s in STATUSES %}
+                {% if s not in ('AGUARDANDO_CONFIRMACAO', 'CONCLUIDO') %}
+                <option value="{{ s }}" {% if s == ticket.status %}selected{% endif %}>{{ s.replace('_',' ') }}</option>
+                {% endif %}
+              {% endfor %}
             </select>
           </label>
-          <label>Detalhe (opcional) <input name="detalhe" placeholder="ex: Aguardando aprovação / Rastreio XYZ" /></label>
-          <div class="actions"><button class="btn" type="submit">Salvar status</button></div>
+          <label>Detalhe (opcional) <input name="detalhe" placeholder="ex: Aguardando retorno / Rastreio XYZ" /></label>
+          <div class="actions"><button class="btn secondary" type="submit">Salvar status</button></div>
         </form>
+        <hr class="sep">
 
-        <hr class="sep" />
+        <div class="edit-toggle-header" onclick="toggleEdit()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:4px 0;user-select:none;">
+          <h3 style="margin:0;">Editar chamado</h3>
+          <span id="edit-toggle-icon" style="font-size:1rem;transition:transform .2s;color:var(--muted);">▶</span>
+        </div>
+        <div id="edit-panel" style="display:none;margin-top:10px;">
+          <form method="post" action="{{ url_for('routes.edit_ticket_route', ticket_id=ticket.id) }}" class="form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>Responsável <input name="responsavel" value="{{ ticket.responsavel or '' }}" /></label>
+            <label>Fornecedor <input name="fornecedor" value="{{ ticket.fornecedor or '' }}" /></label>
+            <label>Centro de custo <input name="centro_custo" value="{{ ticket.centro_custo or '' }}" /></label>
+            <label>Valor estimado (R$) <input name="valor_estimado" value="{% if ticket.valor_estimado is not none %}{{ ticket.valor_estimado }}{% endif %}" /></label>
+            <label>Link do pedido <input name="link_pedido" value="{{ ticket.link_pedido or '' }}" /></label>
+            <label>Código de rastreio <input name="codigo_rastreio" value="{{ ticket.codigo_rastreio or '' }}" /></label>
+            <label>Data limite (YYYY-MM-DD) <input name="data_limite" value="{{ ticket.data_limite or '' }}" /></label>
+            <label>Ativo vinculado
+              <select name="asset_id">
+                <option value="">(nenhum)</option>
+                {% for a in assets %}<option value="{{ a.id }}" {% if ticket.asset_id == a.id %}selected{% endif %}>#{{ a.id }} • {{ a.tag }} • {{ a.modelo }}</option>{% endfor %}
+              </select>
+            </label>
+            <div class="divider">Entrega</div>
+            <label>Destinatário <input name="destinatario" value="{{ ticket.destinatario or '' }}" /></label>
+            <label>Telefone <input name="telefone" value="{{ ticket.telefone or '' }}" /></label>
+            <label>Endereço <input name="endereco" value="{{ ticket.endereco or '' }}" /></label>
+            <label>Cidade <input name="cidade" value="{{ ticket.cidade or '' }}" /></label>
+            <label>Estado <input name="estado" value="{{ ticket.estado or '' }}" /></label>
+            <label>CEP <input name="cep" value="{{ ticket.cep or '' }}" /></label>
+            <div class="actions"><button class="btn secondary" type="submit">Salvar edição</button></div>
+          </form>
+        </div>
+        <hr class="sep">
+        {% else %}
+        <div class="muted" style="margin-bottom:14px;padding:10px;background:rgba(245,158,11,.08);border-radius:6px;border-left:3px solid #f59e0b;font-size:.87rem;">
+          🔒 Chamado <strong>{{ ticket.status.replace('_',' ') }}</strong> — edição bloqueada.
+        </div>
+        {% endif %}
 
-        <h3>Editar chamado</h3>
-        <form method="post" action="{{ url_for('routes.edit_ticket_route', ticket_id=ticket.id) }}" class="form">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <label>Responsável <input name="responsavel" value="{{ ticket.responsavel or '' }}" /></label>
-          <label>Fornecedor <input name="fornecedor" value="{{ ticket.fornecedor or '' }}" /></label>
-          <label>Centro de custo <input name="centro_custo" value="{{ ticket.centro_custo or '' }}" /></label>
-          <label>Valor estimado (R$) <input name="valor_estimado" value="{% if ticket.valor_estimado is not none %}{{ ticket.valor_estimado }}{% endif %}" /></label>
-          <label>Link do pedido <input name="link_pedido" value="{{ ticket.link_pedido or '' }}" /></label>
-          <label>Código de rastreio <input name="codigo_rastreio" value="{{ ticket.codigo_rastreio or '' }}" /></label>
-          <label>Data limite (YYYY-MM-DD) <input name="data_limite" value="{{ ticket.data_limite or '' }}" /></label>
-          <label>Ativo vinculado
-            <select name="asset_id">
-              <option value="">(nenhum)</option>
-              {% for a in assets %}<option value="{{ a.id }}" {% if ticket.asset_id == a.id %}selected{% endif %}>#{{ a.id }} • {{ a.tag }} • {{ a.modelo }}</option>{% endfor %}
-            </select>
-          </label>
-          <div class="divider">Entrega</div>
-          <label>Destinatário <input name="destinatario" value="{{ ticket.destinatario or '' }}" /></label>
-          <label>Telefone <input name="telefone" value="{{ ticket.telefone or '' }}" /></label>
-          <label>Endereço <input name="endereco" value="{{ ticket.endereco or '' }}" /></label>
-          <label>Cidade <input name="cidade" value="{{ ticket.cidade or '' }}" /></label>
-          <label>Estado <input name="estado" value="{{ ticket.estado or '' }}" /></label>
-          <label>CEP <input name="cep" value="{{ ticket.cep or '' }}" /></label>
-          <div class="actions"><button class="btn secondary" type="submit">Atualizar</button></div>
-        </form>
-
-        <hr class="sep" />
+      {% if is_staff and ai_enabled %}
+      <div class="divider">🤖 Assistente IA</div>
+      <label>Rascunho da resolução / documentação
+        <textarea id="aiResolutionInput" rows="5" placeholder="Descreva a solução aplicada para a IA transformar em documentação."></textarea>
+      </label>
+      <button class="btn secondary" type="button" id="aiResolutionBtn" style="width:100%;margin-top:8px;">✨ Gerar documentação com IA</button>
+      <div id="aiResolutionStatus" class="muted" style="margin-top:8px;font-size:.82rem;display:none;"></div>
+      <pre id="aiResolutionResult" style="display:none;white-space:pre-wrap;margin-top:10px;padding:12px;border:1px solid var(--border,#2a3042);border-radius:10px;background:rgba(16,185,129,.08);"></pre>
+      <hr class="sep">
+      {% endif %}
 
         <h3>Anexos</h3>
-        <div class="muted">Permitidos: {{ allowed_ext }} • Limite: {{ max_files }} anexos por chamado.</div>
+        {% if not is_locked %}
+        <div class="muted" style="font-size:.82rem;margin-bottom:6px;">Permitidos: {{ allowed_ext }} • Limite: {{ max_files }}</div>
         <form method="post" action="{{ url_for('routes.upload_attachment', ticket_id=ticket.id) }}" enctype="multipart/form-data" class="form">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="file" name="files" multiple required />
-          <div class="actions"><button class="btn" type="submit">Enviar anexos</button></div>
+          <div class="actions"><button class="btn" type="submit">Enviar</button></div>
         </form>
+        {% endif %}
         <ul class="files">
           {% for a in attachments %}
-            <li class="file-row">
-              <div class="file-left">
-                <a href="{{ url_for('routes.download_attachment', ticket_id=ticket.id, attachment_id=a.id) }}">{{ a.original_name }}</a>
-                <span class="muted">({{ (a.size_bytes or 0) // 1024 }} KB • {{ a.uploaded_em }})</span>
-              </div>
-              <form method="post" action="{{ url_for('routes.delete_attachment_route', ticket_id=ticket.id, attachment_id=a.id) }}" onsubmit="return confirm('Excluir este anexo?');">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="mini danger" type="submit">Excluir</button>
-              </form>
-            </li>
+          <li class="file-row">
+            <div class="file-left">
+              <a href="{{ url_for('routes.download_attachment', ticket_id=ticket.id, attachment_id=a.id) }}">{{ a.original_name }}</a>
+              <span class="muted">({{ (a.size_bytes or 0) // 1024 }} KB)</span>
+            </div>
+            {% if not is_locked %}
+            <form method="post" action="{{ url_for('routes.delete_attachment_route', ticket_id=ticket.id, attachment_id=a.id) }}" onsubmit="return confirm('Excluir?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="mini danger" type="submit">Excluir</button></form>
+            {% endif %}
+          </li>
           {% endfor %}
           {% if attachments|length == 0 %}<li class="muted">Nenhum anexo.</li>{% endif %}
         </ul>
 
-      {# ═══ PAINEL SOLICITANTE ═══ #}
       {% else %}
 
         <h2>Seus anexos</h2>
-        {% if not ticket.assigned_user_id %}
-          <div class="muted" style="margin-bottom:10px;">Adicione documentos ou arquivos que ajudem no atendimento.</div>
+        {% if not ticket.assigned_user_id and not is_locked %}
           <form method="post" action="{{ url_for('routes.upload_attachment', ticket_id=ticket.id) }}" enctype="multipart/form-data" class="form">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="file" name="files" multiple required />
-            <div class="actions"><button class="btn" type="submit">Enviar anexos</button></div>
+            <div class="actions"><button class="btn" type="submit">Enviar</button></div>
           </form>
         {% else %}
-          <div class="muted" style="margin-bottom:10px;">🔒 Envio bloqueado — chamado em atendimento.</div>
+          <div class="muted" style="margin-bottom:10px;">🔒 Envio bloqueado.</div>
         {% endif %}
-
         <ul class="files" style="margin-top:12px;">
           {% for a in attachments %}
-            <li class="file-row">
-              <div class="file-left">
-                <a href="{{ url_for('routes.download_attachment', ticket_id=ticket.id, attachment_id=a.id) }}">{{ a.original_name }}</a>
-                <span class="muted">({{ (a.size_bytes or 0) // 1024 }} KB • {{ a.uploaded_em }})</span>
-              </div>
-              {% if not ticket.assigned_user_id %}
-                <form method="post" action="{{ url_for('routes.delete_attachment_route', ticket_id=ticket.id, attachment_id=a.id) }}" onsubmit="return confirm('Excluir este anexo?');">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="mini danger" type="submit">Excluir</button>
-                </form>
-              {% endif %}
-            </li>
+          <li class="file-row">
+            <div class="file-left">
+              <a href="{{ url_for('routes.download_attachment', ticket_id=ticket.id, attachment_id=a.id) }}">{{ a.original_name }}</a>
+              <span class="muted">({{ (a.size_bytes or 0) // 1024 }} KB)</span>
+            </div>
+          </li>
           {% endfor %}
           {% if attachments|length == 0 %}<li class="muted">Nenhum anexo.</li>{% endif %}
         </ul>
 
       {% endif %}
-
     </section>
   </aside>
 </section>
+
+{# ── Transferência (staff only) ── #}
+{% if is_staff and not is_locked and operators|length > 0 %}
+<section class="card">
+  <h2>↪ Transferir chamado</h2>
+  <form method="post" action="{{ url_for('routes.transfer_ticket_route', ticket_id=ticket.id) }}" class="form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="flex:1;min-width:180px;">Para operador
+      <select name="para_user_id" required>
+        <option value="">Selecionar...</option>
+        {% for op in operators %}<option value="{{ op.id }}">{{ op.nome }}</option>{% endfor %}
+      </select>
+    </label>
+    <label style="flex:2;min-width:200px;">Motivo (opcional)
+      <input name="motivo" placeholder="ex: férias, especialidade...">
+    </label>
+    <div><button class="btn secondary" type="submit">Transferir</button></div>
+  </form>
+  {% if groups|length > 0 %}
+  <form method="post" action="{{ url_for('routes.assign_group_route', ticket_id=ticket.id) }}" class="form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="flex:1;min-width:180px;">Ou atribuir para grupo
+      <select name="group_id">
+        <option value="">Selecionar grupo...</option>
+        {% for grp in groups %}<option value="{{ grp.id }}">{{ grp.nome }}</option>{% endfor %}
+      </select>
+    </label>
+    <div><button class="btn secondary" type="submit">Atribuir ao grupo</button></div>
+  </form>
+  {% endif %}
+  {% if transfers|length > 0 %}
+  <div style="margin-top:12px;">
+    <div class="muted" style="font-size:.82rem;margin-bottom:6px;">Histórico de transferências:</div>
+    {% for tr in transfers %}
+    <div style="font-size:.82rem;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span class="muted">{{ tr.transferido_em[:16] }}</span> —
+      <strong>{{ tr.de_user_nome or '?' }}</strong> → <strong>{{ tr.para_user_nome }}</strong>
+      {% if tr.motivo %}<span class="muted"> ({{ tr.motivo }})</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{# ── Reabertura ── #}
+{% if ticket.status in ('CONCLUIDO','CANCELADO') and (is_opener or (g.user and g.user.role == 'admin')) %}
+<section class="card" style="border-left:4px solid #6366f1;">
+  <h2>🔁 Reabrir chamado</h2>
+  <div class="muted" style="margin-bottom:12px;">O chamado está encerrado. Se o problema persistir, reabra para continuar o atendimento mantendo todo o histórico.</div>
+  <form method="post" action="{{ url_for('routes.reabrir_ticket_route', ticket_id=ticket.id) }}" onsubmit="return confirm('Reabrir este chamado?')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn" type="submit" style="background:#6366f1;">🔁 Reabrir chamado</button>
+  </form>
+</section>
+{% endif %}
+
+{# ── Portal externo (admin/operador) ── #}
+{% if is_staff %}
+<section class="card" style="border-left:4px solid #0ea5e9;">
+  <h2>🔗 Link de acompanhamento externo</h2>
+  <div class="muted" style="margin-bottom:12px;">
+    Gere um link para que o solicitante acompanhe este chamado sem precisar de login no sistema.
+    Válido por 30 dias.
+  </div>
+  <form method="post" action="{{ url_for('routes.gerar_portal_token', ticket_id=ticket.id) }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+      <label style="flex:1;min-width:220px;margin:0;">E-mail para envio (opcional)
+        <input name="email" type="email" placeholder="solicitante@empresa.com">
+      </label>
+      <button class="btn" type="submit" style="background:#0ea5e9;color:#000;flex-shrink:0;">🔗 Gerar link</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+
+{# ── Consumo de estoque vinculado ao chamado ── #}
+{% if is_staff and consumos_ticket is defined %}
+<section class="card" style="border-left:4px solid var(--accent);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <h2 style="margin:0;">📦 Materiais consumidos</h2>
+    {% if g.user["role"] in ["admin","operador"] and ticket.status not in ("CANCELADO",) %}
+    <button onclick="document.getElementById('stockForm').classList.toggle('hidden')"
+            class="btn secondary" style="font-size:12px;padding:6px 12px;">+ Registrar consumo</button>
+    {% endif %}
+  </div>
+
+  {# Form de nova saída #}
+  <div id="stockForm" class="hidden" style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:14px;">
+    <form method="post" action="{{ url_for('stock.consumir_ticket') }}" class="form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+      <div class="grid">
+        <label>Produto do estoque
+          <select name="produto_id" required id="produtoSelect">
+            <option value="">(selecionar)</option>
+            {% for p in produtos_estoque %}
+              <option value="{{ p.id }}">{{ p.nome }} ({{ p.quantidade_atual }} disponíveis)</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Quantidade
+          <input type="number" name="quantidade" min="1" value="1" required>
+        </label>
+        <label class="span-2">Motivo
+          <input name="motivo" value="Chamado #{{ ticket.id }} — {{ ticket.titulo[:40] }}">
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">Registrar saída</button>
+        <button type="button" onclick="document.getElementById('stockForm').classList.add('hidden')" class="btn ghost">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  {# Lista de consumos já registrados #}
+  {% if consumos_ticket|length == 0 %}
+    <div class="muted" style="font-size:13px;">Nenhum material registrado neste chamado.</div>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Produto</th><th>Qtd</th><th>Data</th><th>Por</th></tr></thead>
+      <tbody>
+        {% for m in consumos_ticket %}
+        <tr>
+          <td><a href="{{ url_for('stock.produto_detail', pid=m.produto_id) }}" style="font-size:13px;">{{ m.produto_nome }}</a></td>
+          <td style="font-family:monospace;font-weight:700;color:var(--bad);">-{{ m.quantidade }} {{ m.unidade }}</td>
+          <td style="font-size:12px;color:var(--muted);font-family:monospace;">{{ m.criado_em[5:16] }}</td>
+          <td style="font-size:12px;color:var(--muted);">{{ m.usuario or "—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{# ── Artigos relacionados da KB ── #}
+{% if kb_articles %}
+<section class="card" style="border-left:4px solid #8b5cf6;">
+  <h2>📚 Artigos relacionados</h2>
+  <div class="muted" style="margin-bottom:10px;font-size:.82rem;">Soluções documentadas que podem ajudar no atendimento deste chamado.</div>
+  {% for art in kb_articles %}
+  <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;">
+    <div>
+      <a href="{{ url_for('kb.kb_article', article_id=art.id) }}" style="font-weight:600;font-size:.9rem;">{{ art.titulo }}</a>
+      <div class="muted" style="font-size:.75rem;">👁 {{ art.visualizacoes }} visualizações</div>
+    </div>
+    <a href="{{ url_for('kb.kb_article', article_id=art.id) }}" class="btn secondary" style="font-size:.78rem;padding:4px 10px;white-space:nowrap;">Ver →</a>
+  </div>
+  {% endfor %}
+  <div style="margin-top:10px;">
+    <a href="{{ url_for('kb.kb_new', ticket_id=ticket.id) }}" class="btn secondary" style="font-size:.82rem;">
+      + Criar artigo a partir deste chamado
+    </a>
+  </div>
+</section>
+{% elif is_staff and ticket.status in ('CONCLUIDO',) %}
+<section class="card" style="border-left:4px solid #8b5cf6;">
+  <h2>📚 Base de Conhecimento</h2>
+  <div class="muted" style="margin-bottom:10px;font-size:.85rem;">Este chamado foi concluído. Documente a solução para ajudar em casos futuros.</div>
+  <a href="{{ url_for('kb.kb_new', ticket_id=ticket.id) }}" class="btn secondary" style="font-size:.85rem;">+ Criar artigo de solução</a>
+</section>
+{% endif %}
+
+{% if latest_ai_insight %}
+<section class="card" style="border-left:4px solid #10b981;">
+  <h2>🧠 Último insight da IA</h2>
+  <div class="muted" style="margin-bottom:10px;font-size:.82rem;">{{ latest_ai_insight.created_em[:16] }} • {{ latest_ai_insight.title or latest_ai_insight.insight_type }}</div>
+  <pre style="white-space:pre-wrap;margin:0;font-family:inherit;">{{ latest_ai_insight.content }}</pre>
+</section>
+{% endif %}
+
+{# ── Comentários ── #}
+<section class="card" id="comentarios">
+  <h2>💬 Comentários</h2>
+
+  {% if comments|length == 0 %}
+    <div class="muted" style="margin-bottom:16px;">Nenhum comentário ainda.</div>
+  {% endif %}
+
+  {% for c in comments %}
+  <div class="comment {% if c.interno %}comment-internal{% endif %}">
+    <div class="comment-header">
+      <strong>{{ c.user_nome }}</strong>
+      {% if c.interno %}<span class="pill" style="background:#f59e0b;color:#000;font-size:.7rem;">Nota interna</span>{% endif %}
+      <span class="muted comment-time">{{ c.criado_em[:16] }}</span>
+      {% if g.user and (g.user.id == c.user_id or g.user.role == 'admin') %}
+      <form method="post" action="{{ url_for('routes.delete_comment_route', ticket_id=ticket.id, comment_id=c.id) }}" style="margin-left:auto;" onsubmit="return confirm('Excluir comentário?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="mini danger" type="submit" style="padding:1px 6px;font-size:.72rem;">✕</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="comment-body">{{ c.conteudo }}</div>
+  </div>
+  {% endfor %}
+
+  <form method="post" action="{{ url_for('routes.add_comment_route', ticket_id=ticket.id) }}" class="form" style="margin-top:16px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Novo comentário
+      <textarea name="conteudo" rows="3" placeholder="Escreva aqui..." required style="resize:vertical;"></textarea>
+    </label>
+    {% if is_staff %}
+    <label style="display:flex;align-items:center;gap:8px;font-weight:normal;margin-bottom:10px;">
+      <input type="checkbox" name="interno" value="1">
+      <span>Nota interna (visível apenas para a equipe)</span>
+    </label>
+    {% endif %}
+    <div class="actions"><button class="btn" type="submit">Enviar</button></div>
+  </form>
+</section>
+
+<style>
+.badge-classif { font-size:.72rem; font-weight:800; letter-spacing:.06em; border-radius:5px; padding:2px 8px; }
+.badge-classif.req { background:#3b82f6; color:#fff; }
+.badge-classif.inc { background:#ef4444; color:#fff; }
+.pill-pending { background:#f59e0b !important; color:#000 !important; }
+.pill-done { background:#22c55e !important; color:#000 !important; }
+.alert-pending { background:rgba(245,158,11,.1); border-left:4px solid #f59e0b; border-radius:8px; padding:14px 18px; margin-bottom:16px; }
+.alert-concluido { background:rgba(34,197,94,.1); border-left:4px solid #22c55e; border-radius:8px; padding:14px 18px; margin-bottom:16px; }
+.alert-cancelado { background:rgba(239,68,68,.08); border-left:4px solid #ef4444; border-radius:8px; padding:14px 18px; margin-bottom:16px; }
+.btn-finalizar { background:#22c55e; color:#000; font-weight:700; }
+.btn-finalizar:hover { background:#16a34a; }
+.btn-reenviar { background:#f59e0b; color:#000; font-weight:700; }
+.btn-reenviar:hover { background:#d97706; }
+.alert-info-staff { background:rgba(245,158,11,.1); border-left:4px solid #f59e0b;
+  border-radius:8px; padding:14px 18px; margin-bottom:16px; }
+.alert-info-requester { background:rgba(245,158,11,.08); border:2px solid #f59e0b;
+  border-radius:12px; padding:18px 20px; margin-bottom:16px; }
+.edit-toggle-header:hover h3 { color:var(--accent,#6366f1); }
+#edit-toggle-icon.open { transform:rotate(90deg); }
+/* SLA */
+.sla-bar { padding:10px 16px; border-radius:8px; font-size:.85rem; font-weight:600; margin-bottom:12px; }
+.sla-ok { background:rgba(34,197,94,.1); border-left:4px solid #22c55e; }
+.sla-warning { background:rgba(245,158,11,.12); border-left:4px solid #f59e0b; }
+.sla-breach { background:rgba(239,68,68,.12); border-left:4px solid #ef4444; }
+/* Comentários */
+.comment { border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+.comment-internal { background:rgba(245,158,11,.06); border-color:rgba(245,158,11,.3); }
+.comment-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+.comment-time { font-size:.78rem; }
+.comment-body { font-size:.9rem; white-space:pre-wrap; }
+</style>
+
+<script>
+function toggleEdit() {
+  const panel = document.getElementById("edit-panel");
+  const icon  = document.getElementById("edit-toggle-icon");
+  const open  = panel.style.display === "none";
+  panel.style.display = open ? "block" : "none";
+  icon.classList.toggle("open", open);
+}
+</script>
+
+{% if is_staff and ai_enabled %}
+<script>
+(function(){
+  const btn = document.getElementById('aiResolutionBtn');
+  if (!btn) return;
+  const input = document.getElementById('aiResolutionInput');
+  const status = document.getElementById('aiResolutionStatus');
+  const result = document.getElementById('aiResolutionResult');
+  btn.addEventListener('click', async function(){
+    const resolution = (input?.value || '').trim();
+    status.style.display = 'block';
+    if (!resolution) {
+      status.textContent = 'Descreva a solução aplicada antes de usar a IA.';
+      return;
+    }
+    result.style.display = 'none';
+    status.textContent = 'Gerando rascunho com IA...';
+    btn.disabled = true;
+    try {
+      const resp = await fetch('{{ url_for("routes.api_ai_resolution_draft", ticket_id=ticket.id) }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolution })
+      });
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || 'Falha ao consultar IA.');
+      result.textContent = data.text || data.message || 'Sem resposta.';
+      result.style.display = 'block';
+      status.textContent = 'Rascunho gerado e salvo neste chamado.';
+    } catch (err) {
+      status.textContent = err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}
+

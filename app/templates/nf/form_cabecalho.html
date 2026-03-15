@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width:680px;">
+
+  {# Indicador de progresso #}
+  <div style="display:flex;gap:0;margin-bottom:24px;border-radius:10px;overflow:hidden;border:1px solid var(--b1);">
+    <div style="flex:1;padding:10px 14px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;text-align:center;">1 — Cabeçalho da NF</div>
+    <div style="flex:1;padding:10px 14px;background:var(--s2);color:var(--muted);font-size:12px;font-weight:700;text-align:center;">2 — Itens</div>
+    <div style="flex:1;padding:10px 14px;background:var(--s2);color:var(--muted);font-size:12px;font-weight:700;text-align:center;">3 — Revisar & Confirmar</div>
+  </div>
+
+  <h1>{{ 'Editar NF' if entrada else 'Nova entrada por NF' }}</h1>
+  <p class="muted" style="margin-bottom:20px;">Preencha os dados fiscais uma única vez. No próximo passo você adiciona os equipamentos.</p>
+
+  <form method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <label>Número da NF *
+        <input name="numero_nf" value="{{ entrada.numero_nf if entrada else '' }}"
+               required placeholder="ex: 00123456">
+      </label>
+      <label>Número da OC
+        <input name="numero_oc" value="{{ entrada.numero_oc if entrada else '' }}"
+               placeholder="ex: OC-2024-0042">
+      </label>
+      <label>Fornecedor
+        <input name="fornecedor" value="{{ entrada.fornecedor if entrada else '' }}"
+               placeholder="ex: Dell Brasil, Samsung, Amazon…">
+      </label>
+      <label>Base / Escritório de destino
+        <input name="base_destino" value="{{ entrada.base_destino if entrada else '' }}"
+               placeholder="ex: Sede SP, Filial RJ, Armário TI…">
+      </label>
+      <label class="span-2">Observações
+        <textarea name="observacoes" rows="2" placeholder="Notas adicionais sobre esta entrada…">{{ entrada.observacoes if entrada else '' }}</textarea>
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Próximo: adicionar itens →</button>
+      <a class="btn secondary" href="{{ url_for('nf.nf_list') }}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -13,6 +13,13 @@
       {% if g.user["role"] in ["admin", "operador"] %}
       <a class="btn secondary" href="{{ url_for('assets_admin.edit_asset', asset_id=asset.id) }}">Editar</a>
       {% endif %}
+      {% if g.user["role"] == "admin" %}
+      <form method="post" action="{{ url_for('assets_admin.delete_asset_route', asset_id=asset.id) }}" style="margin:0;"
+            onsubmit="return confirm('Excluir permanentemente o ativo {{ asset.tag }}?\nEsta ação não pode ser desfeita.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" style="background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.28);color:#f87171;" type="submit">🗑 Excluir</button>
+      </form>
+      {% endif %}
     </div>
   </div>
 </section>

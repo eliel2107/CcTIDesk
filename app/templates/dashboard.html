@@ -7,9 +7,17 @@
       <h1>Dashboard</h1>
       <div class="muted">Hoje: <strong>{{ stats.today }}</strong> &nbsp;•&nbsp; Total de chamados: <strong>{{ stats.total }}</strong></div>
     </div>
+    {% if user_role == 'operador' %}
+    <div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;padding:10px 16px;text-align:center;font-size:.85rem;">
+      <div style="font-size:1.1rem;margin-bottom:2px;">👤</div>
+      <div style="font-weight:700;">Meus chamados</div>
+      <div class="muted" style="font-size:.8rem;">{{ user_nome }}</div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="kpi-grid" style="margin-top:16px;">
+    {% set tma = namespace(val=None) %}
     <div class="kpi kpi-open">
       <div class="kpi-title">Em aberto</div>
       <div class="kpi-value">{{ stats.open_count }}</div>
@@ -30,7 +38,21 @@
       <div class="kpi-value">{{ stats.by_prioridade.get('URGENTE', 0) }}</div>
       <div class="muted">prioridade máxima</div>
     </div>
+    <div class="kpi" style="border-top:3px solid #6366f1;">
+      <div class="kpi-title">TMA médio</div>
+      <div class="kpi-value" id="tma-val">—</div>
+      <div class="muted">tempo médio de atendimento</div>
+    </div>
   </div>
+  {% if g.user and g.user.role == 'admin' %}
+    {% set aprovacoes_pendentes = stats.by_status.get('AGUARDANDO_APROVACAO', 0) %}
+    {% if aprovacoes_pendentes > 0 %}
+    <div style="background:rgba(245,158,11,.1);border-left:4px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-top:14px;display:flex;align-items:center;justify-content:space-between;">
+      <span>⚠️ <strong>{{ aprovacoes_pendentes }}</strong> chamado(s) aguardando aprovação</span>
+      <a href="{{ url_for('routes.aprovacoes') }}" class="btn" style="font-size:.8rem;padding:4px 12px;">Ver aprovações →</a>
+    </div>
+    {% endif %}
+  {% endif %}
 </section>
 
 {# ── Gráficos linha 1 ── #}
@@ -67,7 +89,7 @@
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>ID</th><th>Tipo</th><th>Título</th><th>Status</th><th>Prioridade</th><th>Responsável</th><th>Data limite</th><th>Atraso</th></tr></thead>
+      <thead><tr><th>ID</th><th>Título</th><th>Status</th><th>Prioridade</th><th>Responsável</th><th>Data limite</th><th>Atraso</th></tr></thead>
       <tbody>
         {% if stats.overdue|length == 0 %}
           <tr><td colspan="8" class="muted" style="text-align:center;padding:24px;">Nenhum chamado atrasado 🎉</td></tr>
@@ -75,7 +97,7 @@
         {% for r in stats.overdue %}
           <tr>
             <td><a href="{{ url_for('routes.ticket_detail', ticket_id=r.id) }}">#{{ r.id }}</a></td>
-            <td><span class="pill">{{ r.tipo }}</span></td>
+            
             <td class="title-col"><a href="{{ url_for('routes.ticket_detail', ticket_id=r.id) }}">{{ r.titulo }}</a></td>
             <td><span class="pill">{{ r.status }}</span></td>
             <td><span class="pill">{{ r.prioridade }}</span></td>
@@ -192,5 +214,15 @@ new Chart(document.getElementById("ownersChart"), {
     }
   },
 });
+
+// TMA
+fetch('/api/tma').then(r=>r.json()).then(d=>{
+  const el = document.getElementById('tma-val');
+  if (!el) return;
+  if (d.media === null) { el.textContent = '—'; return; }
+  const h = Math.floor(d.media/60);
+  const m = d.media % 60;
+  el.textContent = h > 0 ? h+'h '+m+'min' : m+'min';
+}).catch(()=>{});
 </script>
 {% endblock %}
