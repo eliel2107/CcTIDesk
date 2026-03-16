@@ -36,6 +36,15 @@
       <label>SLA (horas)
         <input name="sla_horas" type="number" min="1" placeholder="Ex: 8 (8 horas)">
       </label>
+      <label>Prioridade padrão
+        <select name="prioridade_padrao">
+          <option value="">Usar seleção do formulário</option>
+          <option value="BAIXA">BAIXA</option>
+          <option value="MEDIA">MÉDIA</option>
+          <option value="ALTA">ALTA</option>
+          <option value="URGENTE">URGENTE</option>
+        </select>
+      </label>
       <label>Valor mínimo para aprovação (R$)
         <input name="valor_aprovacao_limite" type="number" step="0.01" min="0" placeholder="Ex: 500.00">
       </label>
@@ -84,11 +93,11 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>Cor</th><th>Nome</th><th>Descrição</th><th>Campos visíveis</th><th>Status</th><th>Criado em</th><th>Ações</th></tr>
+        <tr><th>Cor</th><th>Nome</th><th>Descrição</th><th>Prioridade padrão</th><th>Campos visíveis</th><th>Status</th><th>Criado em</th><th>Ações</th></tr>
       </thead>
       <tbody>
         {% if categories|length == 0 %}
-          <tr><td colspan="7" class="muted">Nenhuma categoria cadastrada.</td></tr>
+          <tr><td colspan="8" class="muted">Nenhuma categoria cadastrada.</td></tr>
         {% endif %}
         {% for cat in categories %}
         {% set cat_campos = (cat.campos_visiveis | from_json) if cat.campos_visiveis else [] %}
@@ -96,6 +105,7 @@
           <td><span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:{{ cat.cor }};vertical-align:middle;"></span></td>
           <td><strong>{{ cat.nome }}</strong></td>
           <td class="muted">{{ cat.descricao or "—" }}</td>
+          <td><span class="pill" {% if not cat.prioridade_padrao %}style="opacity:.6"{% endif %}>{{ cat.prioridade_padrao or "FORMULÁRIO" }}</span></td>
           <td>
             {% if not cat_campos %}
               <span class="muted" style="font-size:.8rem;">Todos</span>
@@ -121,6 +131,15 @@
                 <label>Nome <input name="nome" value="{{ cat.nome }}" required></label>
                 <label>Descrição <input name="descricao" value="{{ cat.descricao or '' }}"></label>
                 <label>Cor <input name="cor" type="color" value="{{ cat.cor }}" style="height:34px;padding:2px 4px;"></label>
+                <label>Prioridade padrão
+                  <select name="prioridade_padrao">
+                    <option value="" {% if not cat.prioridade_padrao %}selected{% endif %}>Usar seleção do formulário</option>
+                    <option value="BAIXA" {% if cat.prioridade_padrao == "BAIXA" %}selected{% endif %}>BAIXA</option>
+                    <option value="MEDIA" {% if cat.prioridade_padrao == "MEDIA" %}selected{% endif %}>MÉDIA</option>
+                    <option value="ALTA" {% if cat.prioridade_padrao == "ALTA" %}selected{% endif %}>ALTA</option>
+                    <option value="URGENTE" {% if cat.prioridade_padrao == "URGENTE" %}selected{% endif %}>URGENTE</option>
+                  </select>
+                </label>
                 <label><input type="checkbox" name="ativo" {% if cat.ativo %}checked{% endif %}> Ativa</label>
 
                 <div class="field-chip-panel" data-field-chip-group>

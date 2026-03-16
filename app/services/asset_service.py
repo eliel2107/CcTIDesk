@@ -46,6 +46,16 @@ def list_assets_for_select():
 def get_asset(asset_id: int):
     return get_db().execute("SELECT * FROM assets WHERE id=?", (asset_id,)).fetchone()
 
+
+def _assert_serial_unique(serial_number: str, current_asset_id: int = None):
+    serial = clean(serial_number)
+    if not serial:
+        return
+    db = get_db()
+    row = db.execute("SELECT id, tag FROM assets WHERE UPPER(TRIM(serial_number)) = UPPER(TRIM(?))", (serial,)).fetchone()
+    if row and (current_asset_id is None or row["id"] != current_asset_id):
+        raise ValueError(f"Número de série já cadastrado em outro ativo ({row['tag']}).")
+
 def create_asset(data):
     tag = clean(data.get("tag"))
     tipo = clean(data.get("tipo")).upper()
@@ -64,6 +74,7 @@ def create_asset(data):
         raise ValueError("Modelo é obrigatório.")
     if status not in ASSET_STATUSES:
         raise ValueError("Status do ativo inválido.")
+    _assert_serial_unique(serial_number)
 
     db = get_db()
     t = now()
@@ -99,6 +110,7 @@ def update_asset(asset_id: int, data):
         raise ValueError("Modelo é obrigatório.")
     if status not in ASSET_STATUSES:
         raise ValueError("Status do ativo inválido.")
+    _assert_serial_unique(serial_number, asset_id)
 
     db = get_db()
     db.execute(
@@ -122,6 +134,12 @@ def update_asset(asset_id: int, data):
         if (oldv or "") != (newv or ""):
             changes.append(f"{label}: '{oldv or '-'}' → '{newv or '-'}'")
     detail = "; ".join(changes) if changes else "Sem alterações relevantes."
+    if (old["status"] or "") != status:
+        log_asset_event(asset_id, "STATUS_ATIVO", f"{old['status'] or '-'} → {status}")
+    if (old["local_base"] or "") != local_base:
+        log_asset_event(asset_id, "MOVIMENTACAO", f"Base/local: '{old['local_base'] or '-'}' → '{local_base or '-'}'")
+    if (old["responsavel"] or "") != responsavel:
+        log_asset_event(asset_id, "RESPONSAVEL", f"Responsável: '{old['responsavel'] or '-'}' → '{responsavel or '-'}'")
     log_asset_event(asset_id, "EDITADO", detail)
 
 def tickets_by_asset(asset_id: int):

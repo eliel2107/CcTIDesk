@@ -57,6 +57,15 @@ class Config:
 
         # ── NF / rascunhos ───────────────────────────────────────────────────
         self.NF_CANCELLED_DRAFT_RETENTION_DAYS = int(os.getenv("NF_CANCELLED_DRAFT_RETENTION_DAYS", "15") or "15")
+        self.NF_DRAFT_MAX_AGE_DAYS = int(os.getenv("NF_DRAFT_MAX_AGE_DAYS", "30") or "30")
+
+        # ── Regras de negócio V16 ─────────────────────────────────────────────
+        self.TICKET_REOPEN_WINDOW_HOURS = int(os.getenv("TICKET_REOPEN_WINDOW_HOURS", "48") or "48")
+
+        # ── Sessão ─────────────────────────────────────────────────────────
+        from datetime import timedelta
+        self.PERMANENT_SESSION_LIFETIME = timedelta(hours=int(os.getenv("SESSION_LIFETIME_HOURS", "8") or "8"))
+        self.SESSION_REFRESH_EACH_REQUEST = True
 
         self._validate()
 

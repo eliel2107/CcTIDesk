@@ -1,0 +1,307 @@
+<mxfile host="app.diagrams.net" agent="Claude" version="29.6.3">
+  <diagram id="ccti-arch-v3" name="Arquitetura CcTI Desk v3">
+    <mxGraphModel dx="1800" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CAMADA 1: USUÁRIOS                                            -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="L1" value="Camada de usuários" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;startSize=28;fontSize=13;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="20" width="800" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="U1" value="Solicitante" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="L1">
+          <mxGeometry x="20" y="35" width="150" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="U2" value="Operador" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="L1">
+          <mxGeometry x="190" y="35" width="150" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="U3" value="Administrador" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="L1">
+          <mxGeometry x="360" y="35" width="150" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="U4" value="Portal Externo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce5cd;strokeColor=#d79b00;fontStyle=0;" vertex="1" parent="L1">
+          <mxGeometry x="530" y="35" width="130" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- SETA L1 → L2 -->
+        <mxCell id="A12" edge="1" source="L1" target="L2" parent="1" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CAMADA 2: APRESENTAÇÃO                                        -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="L2" value="Apresentação (Jinja2 + HTML / CSS / JS)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;startSize=28;fontSize=13;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="120" width="800" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="P1" value="Dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="20" y="35" width="130" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P2" value="Chamados" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="165" y="35" width="130" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P3" value="Fila / Kanban" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="310" y="35" width="130" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P4" value="Aprovações" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="455" y="35" width="130" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P5" value="Relatórios / Logs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="600" y="35" width="180" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P6" value="Ativos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="20" y="72" width="130" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P7" value="Estoque" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="165" y="72" width="130" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P8" value="Entrada NF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="310" y="72" width="130" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P9" value="Base de Conhecimento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="455" y="72" width="130" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="P10" value="Admin / Catálogo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="L2">
+          <mxGeometry x="600" y="72" width="180" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- SETA L2 → L3 -->
+        <mxCell id="A23" edge="1" source="L2" target="L3" parent="1" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CAMADA 3: ROTAS / BLUEPRINTS                                  -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="L3" value="Rotas / Blueprints (Flask)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;startSize=28;fontSize=13;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="260" width="800" height="72" as="geometry"/>
+        </mxCell>
+        <mxCell id="R1" value="tickets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="L3">
+          <mxGeometry x="15" y="35" width="80" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="R2" value="queue" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="L3">
+          <mxGeometry x="105" y="35" width="70" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="R3" value="workflow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="L3">
+          <mxGeometry x="185" y="35" width="80" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="R4" value="approval" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="L3">
+          <mxGeometry x="275" y="35" width="80" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="R5" value="search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="L3">
+          <mxGeometry x="365" y="35" width="70" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="R6" value="logs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="L3">
+          <mxGeometry x="445" y="35" width="55" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="R7" value="comments" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="L3">
+          <mxGeometry x="510" y="35" width="80" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="R8" value="+ 5 outros" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;fontStyle=2;" vertex="1" parent="L3">
+          <mxGeometry x="600" y="35" width="80" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- SETA L3 → L4 -->
+        <mxCell id="A34" edge="1" source="L3" target="L4" parent="1" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CAMADA 4: SERVIÇOS DE NEGÓCIO                                 -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="L4" value="Serviços de negócio (services/)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;startSize=28;fontSize=13;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="362" width="800" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="S1" value="ticket_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="15" y="35" width="120" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S2" value="sla_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="145" y="35" width="100" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S3" value="approval_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="255" y="35" width="120" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S4" value="workflow_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="385" y="35" width="120" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S5" value="comment_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="515" y="35" width="120" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S6" value="webhook_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="645" y="35" width="120" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S7" value="asset_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="15" y="72" width="100" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S8" value="stock_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="125" y="72" width="100" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S9" value="nf_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="235" y="72" width="90" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S10" value="category_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="335" y="72" width="120" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S11" value="search_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="465" y="72" width="110" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="S12" value="dashboard_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="L4">
+          <mxGeometry x="585" y="72" width="130" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- SETA L4 → L5 -->
+        <mxCell id="A45" edge="1" source="L4" target="L5" parent="1" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CAMADA 5: INFRAESTRUTURA E SUPORTE                            -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="L5" value="Infraestrutura e suporte" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;startSize=28;fontSize=13;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="502" width="800" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="I1" value="Notificações" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="L5">
+          <mxGeometry x="15" y="35" width="110" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="I2" value="Webhooks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="L5">
+          <mxGeometry x="140" y="35" width="100" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="I3" value="Scheduler (APScheduler)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="L5">
+          <mxGeometry x="255" y="35" width="155" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="I4" value="CSRF (Flask-WTF)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="L5">
+          <mxGeometry x="425" y="35" width="120" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="I5" value="Rate Limiting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="L5">
+          <mxGeometry x="560" y="35" width="100" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="I6" value="Auth / RBAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="L5">
+          <mxGeometry x="675" y="35" width="100" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- SETA L5 → L6 -->
+        <mxCell id="A56" edge="1" source="L5" target="L6" parent="1" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CAMADA 6: BASE COMPARTILHADA                                  -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="L6" value="Base compartilhada" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;startSize=28;fontSize=13;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="602" width="800" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="B1" value="constants.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;fontFamily=Courier New;" vertex="1" parent="L6">
+          <mxGeometry x="20" y="33" width="120" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="B2" value="helpers.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;fontFamily=Courier New;" vertex="1" parent="L6">
+          <mxGeometry x="155" y="33" width="100" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="B3" value="config.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;fontFamily=Courier New;" vertex="1" parent="L6">
+          <mxGeometry x="270" y="33" width="100" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="B4" value="extensions.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;fontFamily=Courier New;" vertex="1" parent="L6">
+          <mxGeometry x="385" y="33" width="110" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="B5" value="db.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;fontFamily=Courier New;" vertex="1" parent="L6">
+          <mxGeometry x="510" y="33" width="80" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="B6" value="models.py (re-export)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;fontFamily=Courier New;fontStyle=2;" vertex="1" parent="L6">
+          <mxGeometry x="605" y="33" width="170" height="24" as="geometry"/>
+        </mxCell>
+
+        <!-- SETA L6 → L7 -->
+        <mxCell id="A67" edge="1" source="L6" target="L7" parent="1" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CAMADA 7: DADOS (SQLite)                                      -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="L7" value="Dados (SQLite + WAL + 16 índices)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#56a455;fontStyle=1;startSize=28;fontSize=13;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="700" width="800" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="D1" value="Chamados&#xa;&#xa;tickets, ticket_log&#xa;ticket_steps&#xa;comments, transfers&#xa;attachments" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#56a455;startSize=22;fontSize=10;align=left;" vertex="1" parent="L7">
+          <mxGeometry x="15" y="35" width="150" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="D2" value="Usuários&#xa;&#xa;users, groups&#xa;categories&#xa;user_categories&#xa;group_members" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#56a455;startSize=22;fontSize=10;align=left;" vertex="1" parent="L7">
+          <mxGeometry x="180" y="35" width="145" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="D3" value="Patrimônio&#xa;&#xa;assets, asset_history&#xa;stock_produtos&#xa;stock_movimentacoes&#xa;entradas_nf, catálogo" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#56a455;startSize=22;fontSize=10;align=left;" vertex="1" parent="L7">
+          <mxGeometry x="340" y="35" width="170" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="D4" value="Conhecimento&#xa;&#xa;kb_articles&#xa;ai_jobs&#xa;ticket_ai_insights" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#56a455;startSize=22;fontSize=10;align=left;" vertex="1" parent="L7">
+          <mxGeometry x="525" y="35" width="120" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="D5" value="Sistema&#xa;&#xa;webhooks&#xa;recurring_tickets&#xa;portal_tokens" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#56a455;startSize=22;fontSize=10;align=left;" vertex="1" parent="L7">
+          <mxGeometry x="660" y="35" width="120" height="105" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- INTEGRAÇÕES EXTERNAS (lateral direita)                        -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="EXT" value="Integrações externas" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;startSize=26;fontSize=12;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="885" width="800" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="X1" value="SMTP / E-mail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="EXT">
+          <mxGeometry x="20" y="32" width="140" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="X2" value="Gemini AI (LLM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="EXT">
+          <mxGeometry x="180" y="32" width="140" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="X3" value="Webhooks (saída)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="EXT">
+          <mxGeometry x="340" y="32" width="140" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="X4" value="Sentry (opcional)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;fontStyle=2;" vertex="1" parent="EXT">
+          <mxGeometry x="500" y="32" width="140" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- BACKGROUND JOBS                                               -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="JOBS" value="Jobs em background (APScheduler)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;startSize=26;fontSize=12;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="985" width="800" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="J1" value="Backup DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;" vertex="1" parent="JOBS">
+          <mxGeometry x="20" y="32" width="110" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="J2" value="Digest diário" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;" vertex="1" parent="JOBS">
+          <mxGeometry x="145" y="32" width="110" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="J3" value="Autoatribuição" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;" vertex="1" parent="JOBS">
+          <mxGeometry x="270" y="32" width="120" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="J4" value="Recorrentes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;" vertex="1" parent="JOBS">
+          <mxGeometry x="405" y="32" width="110" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="J5" value="Limpeza NF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;" vertex="1" parent="JOBS">
+          <mxGeometry x="530" y="32" width="110" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- SETAS verticais finais -->
+        <mxCell id="A78" edge="1" source="L7" target="EXT" parent="1" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="A89" edge="1" source="EXT" target="JOBS" parent="1" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- SETAS laterais: serviços → integrações -->
+        <mxCell id="AX1" edge="1" source="I1" target="X1" parent="1" style="endArrow=classic;html=1;dashed=1;strokeColor=#d6b656;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="AX2" edge="1" source="I2" target="X3" parent="1" style="endArrow=classic;html=1;dashed=1;strokeColor=#d6b656;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LEGENDA                                                       -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="LEG" value="CcTI Desk — Arquitetura refatorada v3&#xa;Flask + SQLite · 57 arquivos Python · 16 serviços · 12 módulos de rota" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1070" width="600" height="40" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

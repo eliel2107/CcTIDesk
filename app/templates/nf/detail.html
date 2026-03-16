@@ -22,8 +22,11 @@
       {% if entrada.status == 'RASCUNHO' %}
         <a class="btn" href="{{ url_for('nf.nf_itens', eid=entrada.id) }}">Continuar edição →</a>
       {% endif %}
-      {% if g.user.role == 'admin' and entrada.status != STATUS_CONFIRMADA %}
-        <form method="post" action="{{ url_for('nf.nf_excluir', eid=entrada.id) }}" style="margin:0;" onsubmit="return confirm('Excluir esta NF?')">
+      {% if entrada.status == 'RASCUNHO' or (entrada.status == STATUS_CONFIRMADA and g.user.role == 'admin') %}
+        <a class="btn ghost" href="{{ url_for('nf.nf_editar', eid=entrada.id) }}">Editar</a>
+      {% endif %}
+      {% if g.user.role == 'admin' %}
+        <form method="post" action="{{ url_for('nf.nf_excluir', eid=entrada.id) }}" style="margin:0;" onsubmit="return confirm('Excluir esta NF? Em NFs confirmadas, a reversão só ocorre se os ativos ainda estiverem em estoque e sem vínculos com chamados.')">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn ghost" type="submit" style="color:var(--bad);">Excluir</button>
         </form>
@@ -35,7 +38,8 @@
     <div class="muted" style="margin-top:8px;font-size:13px;">{{ entrada.observacoes }}</div>
   {% endif %}
   <div style="display:flex;gap:20px;margin-top:14px;font-size:13px;color:var(--muted);flex-wrap:wrap;">
-    <span>Criada em: <strong style="color:var(--fg);">{{ entrada.criado_em[2:16] }}</strong></span>
+    <span>Cadastro: <strong style="color:var(--fg);">{{ entrada.criado_em[2:16] }}</strong></span>
+    <span>Última atualização: <strong style="color:var(--fg);">{{ (entrada.atualizado_em or entrada.criado_em)[2:16] }}</strong></span>
     {% if entrada.confirmado_em %}
       <span>Confirmada em: <strong style="color:var(--ok);">{{ entrada.confirmado_em[2:16] }}</strong></span>
     {% endif %}
@@ -45,7 +49,6 @@
   </div>
 </section>
 
-{# ── KPIs rápidos ── #}
 {% set ativos_gerados = assets_gerados|selectattr('asset_id')|list %}
 {% set consumiveis_gerados = assets_gerados|rejectattr('asset_id')|list %}
 <div class="kpi-grid" style="margin-bottom:16px;">
@@ -67,7 +70,16 @@
   </div>
 </div>
 
-{# ── Ativos criados ── #}
+{% if entrada.status == STATUS_CONFIRMADA and g.user.role == 'admin' %}
+<section class="card" style="border-color:rgba(245,166,35,.22);">
+  <h2 style="margin-bottom:8px;">Regras para exclusão administrativa</h2>
+  <div class="muted">
+    A exclusão de NF confirmada só é permitida quando os ativos gerados ainda estão em <strong>ESTOQUE</strong> e não existe vínculo com chamados.
+    Para itens de estoque, a reversão só ocorre se ainda houver saldo suficiente para retirar a quantidade lançada originalmente.
+  </div>
+</section>
+{% endif %}
+
 {% if ativos_gerados %}
 <section class="card">
   <h2 style="margin-bottom:14px;">🖥 Ativos criados</h2>
@@ -84,7 +96,7 @@
           <td style="font-weight:600;">{{ row.modelo }}</td>
           <td style="font-size:12px;color:var(--muted);font-family:monospace;">{{ row.serial_number or '—' }}</td>
           <td style="font-size:12px;color:var(--muted);">{{ row.local_base or '—' }}</td>
-          <td><span class="pill pill-done" style="font-size:10px;">ESTOQUE</span></td>
+          <td><span class="pill pill-done" style="font-size:10px;">{{ row.asset_status or 'ESTOQUE' }}</span></td>
           <td>
             <a href="{{ url_for('assets_admin.asset_detail', asset_id=row.asset_id) }}"
                class="mini" style="font-size:11px;">Ver ativo →</a>
@@ -97,7 +109,6 @@
 </section>
 {% endif %}
 
-{# ── Consumíveis ── #}
 {% if consumiveis_gerados %}
 <section class="card">
   <h2 style="margin-bottom:14px;">📦 Consumíveis atualizados</h2>
@@ -123,7 +134,6 @@
 </section>
 {% endif %}
 
-{# Se ainda rascunho #}
 {% if entrada.status == 'RASCUNHO' %}
 <section class="card" style="border-color:rgba(245,166,35,.3);">
   <h2>Rascunho — ainda não confirmado</h2>

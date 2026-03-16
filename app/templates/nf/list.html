@@ -6,7 +6,10 @@
       <h1>Entradas por NF</h1>
       <div class="muted">Registre recebimentos de equipamentos e consumíveis de forma ágil.</div>
     </div>
-    <a class="btn" href="{{ url_for('nf.nf_nova') }}">+ Nova entrada</a>
+    <div class="actions">
+      <a class="btn secondary" href="{{ url_for('nf.nf_dashboard') }}">📊 Dashboard NFs</a>
+      <a class="btn" href="{{ url_for('nf.nf_nova') }}">+ Nova entrada</a>
+    </div>
   </div>
 </section>
 
@@ -14,7 +17,7 @@
   <form method="get" class="filters">
     <div class="grid">
       <label>Busca
-        <input name="q" value="{{ filtros.q }}" placeholder="NF / fornecedor / base…">
+        <input name="q" value="{{ filtros.q }}" placeholder="NF / OC / fornecedor / localização…">
       </label>
       <label>Status
         <select name="status">
@@ -39,8 +42,8 @@
   <div class="table-wrap">
     <table>
       <thead><tr>
-        <th>NF</th><th>OC</th><th>Fornecedor</th><th>Base destino</th>
-        <th>Itens</th><th>Unidades</th><th>Status</th><th>Data</th><th></th>
+        <th>NF</th><th>OC</th><th>Fornecedor</th><th>Localização</th>
+        <th>Itens</th><th>Unidades</th><th>Status</th><th>Cadastro</th><th></th>
       </tr></thead>
       <tbody>
         {% for e in entradas %}
@@ -62,17 +65,22 @@
           </td>
           <td style="font-size:12px;font-family:monospace;color:var(--muted);">{{ e.criado_em[2:16] }}</td>
           <td>
-            {% if e.status == 'RASCUNHO' %}
-              <a class="btn secondary" href="{{ url_for('nf.nf_itens', eid=e.id) }}" style="padding:5px 10px;font-size:12px;">Continuar →</a>
-            {% else %}
-              <a class="btn ghost" href="{{ url_for('nf.nf_detail', eid=e.id) }}" style="padding:5px 10px;font-size:12px;">Ver</a>
-            {% endif %}
-            {% if g.user.role == 'admin' and e.status != 'CONFIRMADA' %}
-              <form method="post" action="{{ url_for('nf.nf_excluir', eid=e.id) }}" style="margin:6px 0 0 0;" onsubmit="return confirm('Excluir esta NF?')">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn ghost" type="submit" style="padding:5px 10px;font-size:12px;color:var(--bad);">Excluir</button>
-              </form>
-            {% endif %}
+            <div class="actions" style="justify-content:flex-end;gap:6px;flex-wrap:wrap;">
+              {% if e.status == 'RASCUNHO' %}
+                <a class="btn secondary" href="{{ url_for('nf.nf_itens', eid=e.id) }}" style="padding:5px 10px;font-size:12px;">Continuar →</a>
+              {% else %}
+                <a class="btn ghost" href="{{ url_for('nf.nf_detail', eid=e.id) }}" style="padding:5px 10px;font-size:12px;">Ver</a>
+              {% endif %}
+              {% if e.status == 'RASCUNHO' or (e.status == 'CONFIRMADA' and g.user.role == 'admin') %}
+                <a class="btn ghost" href="{{ url_for('nf.nf_editar', eid=e.id) }}" style="padding:5px 10px;font-size:12px;">Editar</a>
+              {% endif %}
+              {% if g.user.role == 'admin' %}
+                <form method="post" action="{{ url_for('nf.nf_excluir', eid=e.id) }}" style="margin:0;" onsubmit="return confirm('Excluir esta NF? Em NFs confirmadas, a exclusão tenta reverter ativos e estoque lançados.')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn ghost" type="submit" style="padding:5px 10px;font-size:12px;color:var(--bad);">Excluir</button>
+                </form>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% endfor %}

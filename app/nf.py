@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, g, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g, current_app, jsonify
 from app.auth import login_required, role_required
 from app.services.nf_service import (
     list_entradas, get_entrada, get_itens, get_assets_gerados,
     criar_entrada, atualizar_entrada, adicionar_item, remover_item,
     gerar_preview, confirmar_entrada, cancelar_entrada, delete_entrada_admin,
+    nf_dashboard_stats, nf_dashboard_month_detail,
     TIPOS_ATIVO, TIPOS_CONSUMIVEL, TIPO_LABEL,
     STATUS_RASCUNHO, STATUS_CONFIRMADA,
 )
@@ -13,7 +14,6 @@ bp = Blueprint("nf", __name__, url_prefix="/nf")
 TODOS_TIPOS = TIPOS_ATIVO + TIPOS_CONSUMIVEL
 
 
-# ── Lista de NFs ──────────────────────────────────────────────────────
 @bp.get("/")
 @login_required
 @role_required("admin", "operador")
@@ -26,12 +26,52 @@ def nf_list():
     )
 
 
-# ── Nova NF (cabeçalho) ───────────────────────────────────────────────
+@bp.get("/dashboard")
+@login_required
+@role_required("admin", "operador")
+def nf_dashboard():
+    filtros = {"localizacao": request.args.get("localizacao", "")}
+    month = request.args.get("mes", "")
+    stats = nf_dashboard_stats(filtros)
+    detalhes = nf_dashboard_month_detail(month, filtros.get("localizacao", "")) if month else []
+    return render_template(
+        "nf/dashboard.html",
+        title="Dashboard de NFs",
+        stats=stats,
+        filtros=filtros,
+        selected_month=month,
+        detalhes_mes=detalhes,
+    )
+
+
+@bp.get("/api/dashboard/mes/<month>")
+@login_required
+@role_required("admin", "operador")
+def nf_dashboard_month_api(month: str):
+    localizacao = request.args.get("localizacao", "")
+    rows = nf_dashboard_month_detail(month, localizacao)
+    payload = []
+    for row in rows:
+        payload.append({
+            "id": row["id"],
+            "numero_nf": row["numero_nf"],
+            "numero_oc": row["numero_oc"] or "—",
+            "fornecedor": row["fornecedor"] or "—",
+            "base_destino": row["base_destino"] or "Sem localização",
+            "criado_em": row["criado_em"],
+            "status": row["status"],
+            "total_itens": row["total_itens"] or 0,
+            "total_unidades": row["total_unidades"] or 0,
+            "url": url_for("nf.nf_detail", eid=row["id"]),
+        })
+    return jsonify(payload)
+
+
 @bp.get("/nova")
 @login_required
 @role_required("admin", "operador")
 def nf_nova():
-    return render_template("nf/form_cabecalho.html", entrada=None)
+    return render_template("nf/form_cabecalho.html", entrada=None, allow_header_only=False)
 
 
 @bp.post("/nova")
@@ -49,31 +89,52 @@ def nf_criar():
         return redirect(url_for("nf.nf_nova"))
 
 
-# ── Editar cabeçalho ──────────────────────────────────────────────────
 @bp.get("/<int:eid>/editar")
 @login_required
 @role_required("admin", "operador")
 def nf_editar(eid: int):
     e = get_entrada(eid)
-    if not e or e["status"] != STATUS_RASCUNHO:
-        flash("NF não encontrada ou já confirmada.", "error")
+    if not e:
+        flash("NF não encontrada.", "error")
         return redirect(url_for("nf.nf_list"))
-    return render_template("nf/form_cabecalho.html", entrada=e)
+    allow_header_only = False
+    if e["status"] == STATUS_CONFIRMADA:
+        if g.user["role"] != "admin":
+            flash("Somente administradores podem editar NF confirmada.", "error")
+            return redirect(url_for("nf.nf_detail", eid=eid))
+        allow_header_only = True
+    elif e["status"] != STATUS_RASCUNHO:
+        flash("NF não encontrada ou já cancelada.", "error")
+        return redirect(url_for("nf.nf_list"))
+    return render_template("nf/form_cabecalho.html", entrada=e, allow_header_only=allow_header_only)
 
 
 @bp.post("/<int:eid>/editar")
 @login_required
 @role_required("admin", "operador")
 def nf_editar_post(eid: int):
+    e = get_entrada(eid)
+    if not e:
+        flash("NF não encontrada.", "error")
+        return redirect(url_for("nf.nf_list"))
+
+    allow_confirmed = e["status"] == STATUS_CONFIRMADA and g.user["role"] == "admin"
+    if e["status"] == STATUS_CONFIRMADA and not allow_confirmed:
+        flash("Somente administradores podem editar NF confirmada.", "error")
+        return redirect(url_for("nf.nf_detail", eid=eid))
+
     try:
-        atualizar_entrada(eid, dict(request.form))
+        atualizar_entrada(eid, dict(request.form), allow_confirmed=allow_confirmed)
         flash("NF atualizada.", "success")
     except ValueError as e:
         flash(str(e), "error")
+        return redirect(url_for("nf.nf_editar", eid=eid))
+
+    if allow_confirmed:
+        return redirect(url_for("nf.nf_detail", eid=eid))
     return redirect(url_for("nf.nf_itens", eid=eid))
 
 
-# ── Gestão de itens (passo 2) ─────────────────────────────────────────
 @bp.get("/<int:eid>/itens")
 @login_required
 @role_required("admin", "operador")
@@ -109,11 +170,13 @@ def nf_add_item(eid: int):
 @login_required
 @role_required("admin", "operador")
 def nf_remover_item(eid: int, iid: int):
-    remover_item(iid, eid)
+    try:
+        remover_item(iid, eid)
+    except ValueError as e:
+        flash(str(e), "error")
     return redirect(url_for("nf.nf_itens", eid=eid))
 
 
-# ── Preview + confirmação (passo 3) ───────────────────────────────────
 @bp.get("/<int:eid>/preview")
 @login_required
 @role_required("admin", "operador")
@@ -158,7 +221,6 @@ def nf_confirmar(eid: int):
     return redirect(url_for("nf.nf_detail", eid=eid))
 
 
-# ── Detalhe (pós-confirmação) ─────────────────────────────────────────
 @bp.get("/<int:eid>")
 @login_required
 @role_required("admin", "operador")
@@ -177,7 +239,6 @@ def nf_detail(eid: int):
     )
 
 
-# ── Cancelar ──────────────────────────────────────────────────────────
 @bp.post("/<int:eid>/cancelar")
 @login_required
 @role_required("admin", "operador")
@@ -186,11 +247,11 @@ def nf_cancelar(eid: int):
     flash("Entrada cancelada.", "success")
     return redirect(url_for("nf.nf_list"))
 
+
 @bp.post("/<int:eid>/itens/add-catalogo")
 @login_required
 @role_required("admin", "operador")
 def nf_add_items_catalogo(eid: int):
-    """Adiciona múltiplos itens do catálogo de uma vez."""
     ids = request.form.getlist("catalogo_ids")
     erros = []
     for cid in ids:
@@ -214,7 +275,7 @@ def nf_add_items_catalogo(eid: int):
 @role_required("admin")
 def nf_excluir(eid: int):
     try:
-        delete_entrada_admin(eid)
+        delete_entrada_admin(eid, usuario=g.user.get("nome", "admin"))
         flash("NF excluída com sucesso.", "success")
     except ValueError as e:
         flash(str(e), "error")

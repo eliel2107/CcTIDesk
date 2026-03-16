@@ -479,3 +479,28 @@ def test_devolver_route_notifies_requester(app, auth):
         ).fetchone()
         assert notif is not None
         assert "complemento" in notif["titulo"].lower() or notif["ticket_id"] == tid
+
+
+def test_queue_hides_completed_and_cancelled(app):
+    """A fila operacional deve exibir apenas chamados ativos."""
+    with app.app_context():
+        from app.models import create_ticket, update_status, list_queue_tickets
+
+        tid_done = create_ticket({
+            "tipo": "COMPRA", "titulo": "Chamado concluido na fila", "prioridade": "MEDIA"
+        })
+        tid_cancel = create_ticket({
+            "tipo": "ENVIO", "titulo": "Chamado cancelado na fila", "prioridade": "BAIXA"
+        })
+        tid_open = create_ticket({
+            "tipo": "COMPRA", "titulo": "Chamado ativo na fila", "prioridade": "ALTA"
+        })
+
+        update_status(tid_done, "CONCLUIDO")
+        update_status(tid_cancel, "CANCELADO")
+
+        queue_ids = {row["id"] for row in list_queue_tickets()}
+
+        assert tid_open in queue_ids
+        assert tid_done not in queue_ids
+        assert tid_cancel not in queue_ids

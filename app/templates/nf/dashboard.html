@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <div class="eyebrow">Patrimônio</div>
+      <h1>Dashboard de NFs</h1>
+      <div class="muted">Visão consolidada das entradas por NF, com drill-down por mês e localização.</div>
+    </div>
+    <div class="actions">
+      <a class="btn secondary" href="{{ url_for('nf.nf_list') }}">← Entradas NF</a>
+      <a class="btn" href="{{ url_for('nf.nf_nova') }}">+ Nova entrada</a>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <form method="get" class="filters">
+    <div class="grid">
+      <label>Localização
+        <select name="localizacao">
+          <option value="">Todas</option>
+          {% for local in stats.locations %}
+            <option value="{{ local if local != 'Sem localização' else '' }}" {% if filtros.localizacao == local or (not filtros.localizacao and local == 'Sem localização' and false) %}selected{% endif %}>{{ local }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Aplicar filtro</button>
+      <a class="btn secondary" href="{{ url_for('nf.nf_dashboard') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+<section class="kpi-grid" style="margin-bottom:16px;">
+  <div class="kpi">
+    <div class="kpi-title">NFs cadastradas</div>
+    <div class="kpi-value">{{ stats.total_nf }}</div>
+  </div>
+  <div class="kpi kpi-done">
+    <div class="kpi-title">Ativos gerados</div>
+    <div class="kpi-value">{{ stats.total_ativos }}</div>
+  </div>
+  <div class="kpi" style="border-top:3px solid #f59e0b;">
+    <div class="kpi-title">Consumíveis lançados</div>
+    <div class="kpi-value">{{ stats.total_consumiveis }}</div>
+  </div>
+  <div class="kpi" style="border-top:3px solid #8b5cf6;">
+    <div class="kpi-title">Filtro atual</div>
+    <div class="kpi-value" style="font-size:1.05rem;line-height:1.2;">{{ filtros.localizacao or 'Todas as localizações' }}</div>
+  </div>
+</section>
+
+<div class="chart-grid">
+  <section class="card">
+    <h2>NFs por mês</h2>
+    <div class="muted" style="margin-bottom:10px;">Clique em uma barra para listar NF, OC e localização daquele mês.</div>
+    <div class="chart-container"><canvas id="nfMonthChart"></canvas></div>
+  </section>
+  <section class="card">
+    <h2>NFs por localização</h2>
+    <div class="chart-container"><canvas id="nfLocationChart"></canvas></div>
+  </section>
+</div>
+
+<div class="chart-grid">
+  <section class="card">
+    <h2>Status das NFs</h2>
+    <div class="chart-container"><canvas id="nfStatusChart"></canvas></div>
+  </section>
+  <section class="card">
+    <h2>Itens por tipo</h2>
+    <div class="chart-container"><canvas id="nfItemTypeChart"></canvas></div>
+  </section>
+</div>
+
+<section class="card">
+  <div class="detail-head">
+    <div>
+      <h2 id="detailTitle">Detalhes do mês</h2>
+      <div class="muted" id="detailSubtitle">
+        {% if selected_month %}
+          Exibindo NFs cadastradas em {{ selected_month }}{% if filtros.localizacao %} para {{ filtros.localizacao }}{% endif %}.
+        {% else %}
+          Clique no gráfico "NFs por mês" para carregar os detalhes.
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>NF</th><th>OC</th><th>Fornecedor</th><th>Localização</th><th>Cadastro</th><th>Status</th><th>Itens</th><th>Unidades</th>
+        </tr>
+      </thead>
+      <tbody id="nfMonthDetailBody">
+        {% if detalhes_mes %}
+          {% for row in detalhes_mes %}
+          <tr>
+            <td><a href="{{ url_for('nf.nf_detail', eid=row.id) }}" style="font-weight:700;">{{ row.numero_nf }}</a></td>
+            <td>{{ row.numero_oc or '—' }}</td>
+            <td>{{ row.fornecedor or '—' }}</td>
+            <td>{{ row.base_destino or 'Sem localização' }}</td>
+            <td style="font-family:monospace;">{{ row.criado_em[2:16] }}</td>
+            <td><span class="pill">{{ row.status }}</span></td>
+            <td>{{ row.total_itens or 0 }}</td>
+            <td>{{ row.total_unidades or 0 }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="8" class="muted" style="text-align:center;padding:24px;">Nenhum mês selecionado.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const monthSeries = {{ stats.months|tojson }};
+const locationSeries = {{ stats.by_location|tojson }};
+const statusSeries = {{ stats.by_status|tojson }};
+const itemTypeSeries = {{ stats.asset_mix|tojson }};
+const selectedLocation = {{ filtros.localizacao|tojson }};
+
+const GRID_COLOR  = 'rgba(141,180,255,0.08)';
+const TICK_COLOR  = '#7a90b8';
+const TEXT_COLOR  = '#e7eefc';
+Chart.defaults.color = TICK_COLOR;
+Chart.defaults.font.family = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
+
+function baseOptions(extra) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: { legend: { labels: { color: TEXT_COLOR, boxWidth: 14, padding: 14 } }, ...extra },
+  };
+}
+function gridOpts() {
+  return {
+    scales: {
+      x: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR } },
+      y: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR }, beginAtZero: true },
+    }
+  };
+}
+
+new Chart(document.getElementById('nfMonthChart'), {
+  type: 'bar',
+  data: {
+    labels: monthSeries.map(x => x.label),
+    datasets: [{
+      label: 'NFs',
+      data: monthSeries.map(x => x.total),
+      backgroundColor: '#3b82f6',
+      borderRadius: 8,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    ...baseOptions({ legend: { display: false } }),
+    ...gridOpts(),
+    onClick: function(evt, elements) {
+      if (!elements.length) return;
+      const idx = elements[0].index;
+      const month = monthSeries[idx].key;
+      loadMonthDetails(month, monthSeries[idx].label);
+    }
+  }
+});
+
+new Chart(document.getElementById('nfLocationChart'), {
+  type: 'doughnut',
+  data: {
+    labels: locationSeries.map(x => x.label),
+    datasets: [{ data: locationSeries.map(x => x.total) }]
+  },
+  options: { ...baseOptions({}), cutout: '65%' }
+});
+
+new Chart(document.getElementById('nfStatusChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(statusSeries),
+    datasets: [{ label: 'NFs', data: Object.values(statusSeries), backgroundColor: ['#10b981','#3b82f6','#f59e0b'], borderRadius: 8, borderSkipped: false }]
+  },
+  options: { ...baseOptions({ legend: { display: false } }), ...gridOpts() }
+});
+
+new Chart(document.getElementById('nfItemTypeChart'), {
+  type: 'bar',
+  data: {
+    labels: itemTypeSeries.map(x => x.label),
+    datasets: [{ label: 'Unidades', data: itemTypeSeries.map(x => x.total), backgroundColor: '#8b5cf6', borderRadius: 8, borderSkipped: false }]
+  },
+  options: { ...baseOptions({ legend: { display: false } }), ...gridOpts() }
+});
+
+async function loadMonthDetails(month, monthLabel) {
+  const params = new URLSearchParams();
+  if (selectedLocation) params.set('localizacao', selectedLocation);
+  const response = await fetch(`{{ url_for('nf.nf_dashboard_month_api', month='__MONTH__') }}`.replace('__MONTH__', month) + (params.toString() ? `?${params.toString()}` : ''));
+  const rows = await response.json();
+  const body = document.getElementById('nfMonthDetailBody');
+  const title = document.getElementById('detailTitle');
+  const subtitle = document.getElementById('detailSubtitle');
+  title.textContent = `Detalhes de ${monthLabel}`;
+  subtitle.textContent = selectedLocation ? `Exibindo NFs de ${monthLabel} para ${selectedLocation}.` : `Exibindo NFs cadastradas em ${monthLabel}.`;
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="8" class="muted" style="text-align:center;padding:24px;">Nenhuma NF encontrada para o período selecionado.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(row => `
+    <tr>
+      <td><a href="${row.url}" style="font-weight:700;">${row.numero_nf}</a></td>
+      <td>${row.numero_oc}</td>
+      <td>${row.fornecedor}</td>
+      <td>${row.base_destino}</td>
+      <td style="font-family:monospace;">${row.criado_em.slice(2, 16)}</td>
+      <td><span class="pill">${row.status}</span></td>
+      <td>${row.total_itens}</td>
+      <td>${row.total_unidades}</td>
+    </tr>
+  `).join('');
+}
+</script>
+{% endblock %}

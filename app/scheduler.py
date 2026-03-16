@@ -204,11 +204,14 @@ def run_assignment_timeout_fallback(app):
 
 def run_nf_cleanup(app):
     try:
-        from .services.nf_service import cleanup_expired_cancelled_drafts
+        from .services.nf_service import cleanup_expired_cancelled_drafts, cleanup_stale_drafts
         removed = cleanup_expired_cancelled_drafts()
+        stale = cleanup_stale_drafts(max_age_days=int(app.config.get("NF_DRAFT_MAX_AGE_DAYS", 30)))
         if removed:
             logger.info(f"[NF] {removed} rascunho(s) cancelado(s) expirado(s) removido(s).")
-        return removed
+        if stale:
+            logger.info(f"[NF] {stale} rascunho(s) abandonado(s) cancelado(s) automaticamente.")
+        return removed + stale
     except Exception:
         logger.exception("[NF] Erro ao limpar rascunhos cancelados expirados.")
         return 0

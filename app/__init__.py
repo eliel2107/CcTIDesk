@@ -53,6 +53,13 @@ def create_app(config_object=None):
     init_db_app(app)
     init_cli(app)
 
+    # ── Inicialização do banco (uma única vez no startup) ─────────────────
+    with app.app_context():
+        from .db import init_db
+        init_db()
+        from .services.auth_service import ensure_default_admin
+        ensure_default_admin()
+
     # ── Jinja filters ─────────────────────────────────────────────────────
     import json as _json
     @app.template_filter("from_json")
@@ -75,8 +82,14 @@ def create_app(config_object=None):
 
     # ── Scheduler (backup + digest + recorrência) ─────────────────────────
     scheduler_disabled = app.config.get("TESTING", False) or os.getenv("DISABLE_SCHEDULER", "").lower() in {"1", "true", "yes"}
+    # Evitar inicializar múltiplos schedulers em ambientes multi-worker (gunicorn)
     if not scheduler_disabled:
-        _init_scheduler(app)
+        _is_main_process = (
+            os.environ.get("WERKZEUG_RUN_MAIN") == "true"  # Flask dev reloader
+            or not app.debug  # Produção (1 scheduler por worker — usar lock externo se multi-worker)
+        )
+        if _is_main_process:
+            _init_scheduler(app)
 
     # ── Blueprints ────────────────────────────────────────────────────────
     from .routes import bp as routes_bp

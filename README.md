@@ -1,271 +1,354 @@
-# 🎫 Gerenciador de Chamados, Compras e Envios de TI
+# CcTI Desk
 
-Sistema web completo para gestão operacional de chamados de suporte, compras e envios de equipamentos de TI — desenvolvido em **Python · Flask · SQLite**.
+Sistema interno de Service Desk para gestão de chamados, ativos de TI, estoque e entradas fiscais — desenvolvido em Python com Flask e SQLite.
 
-> **Stack:** Python 3.11+ · Flask 3 · SQLite · Jinja2 · Chart.js · HTML/CSS puro (sem framework)
+> **Stack:** Python 3.11+ · Flask 3 · SQLite (WAL) · Jinja2 · Chart.js · APScheduler · Gemini AI (opcional)
 
 ---
 
-## ✨ Funcionalidades principais
+## Demonstração
 
-| Módulo | Descrição |
+### Login e tela inicial
+
+![Login](img/Menu_Login.png)
+![Inicio](img/Inicio.png)
+
+### Dashboard
+
+![Dashboard](img/Dashboard.png)
+![Dashboard Ativos](img/Dash_Ativos.png)
+
+### Chamados
+
+| Fila operacional | Kanban |
 |---|---|
-| **Portal do Solicitante** | Abertura simplificada de chamados, acompanhamento em tempo real, bloqueio automático de edição quando em atendimento |
-| **Fila Operacional** | Visão para operadores/admins assumirem chamados, destaque visual para chamados sem responsável |
-| **Dashboard com Gráficos** | KPIs em tempo real, Chart.js com gráficos de status, prioridade, aging e top responsáveis |
-| **Kanban** | Quadro visual drag-and-drop com colunas por status |
-| **Relatórios & SLA** | Exportação em XLSX e PDF, tempo médio de resolução, % dentro do SLA |
-| **Gestão de Ativos** | Cadastro de equipamentos, histórico, dashboard de ativos |
-| **Notificações por e-mail** | Envio assíncrono via SMTP ao criar chamado, assumir e mudar status |
-| **API REST** | Endpoints JSON para integração com outros sistemas |
-| **Testes automatizados** | Suite com pytest cobrindo autenticação, permissões, modelos e rotas |
-| **Paginação** | Listagem de chamados com 25 por página e navegação |
+| ![Fila](img/Fila_Chamados.png) | ![Kanban](img/Kanban.gif) |
 
----
-
-## 🔐 Perfis de acesso
-
-| Perfil | Acesso |
+| Abertura de chamado | Tratamento |
 |---|---|
-| `admin` | Acesso total — usuários, chamados, ativos, relatórios |
-| `operador` | Fila, chamados, ativos — sem gestão de usuários |
-| `solicitante` | Abertura e acompanhamento dos próprios chamados |
-| `viewer` | Visualização somente leitura |
+| ![Abertura](img/Abertura_Chamado.png) | ![Tratamento](img/Tratamento_Chamado.png) |
+
+### Ativos, usuários e API
+
+| Ativos | Usuários | API |
+|---|---|---|
+| ![Ativos](img/AtivoDemo.gif) | ![Usuários](img/Ger_User.gif) | ![API](img/API_Status.gif) |
+
+### Busca global
+
+![Busca](img/BuscaGeral.gif)
 
 ---
 
+## Funcionalidades
 
-## 🔒 Segurança
+### Chamados e fluxo de trabalho
+
+- Abertura por solicitante ou operador com categorização obrigatória
+- Fluxo de status com validação de transições (ABERTO → EM_ANDAMENTO → ... → CONCLUIDO)
+- Aprovação/reprovação por admin quando exigido pela categoria
+- Transferência entre operadores com motivo e histórico
+- Devolução ao solicitante para complemento de informações
+- Finalização com confirmação do solicitante (AGUARDANDO_CONFIRMACAO)
+- Reabertura controlada com janela de tempo configurável
+- Checklist por chamado (padrão por categoria ou manual)
+- Comentários públicos e notas internas
+- Anexos com validação de extensão e limite por tipo
+- Numeração automática sequencial (REQ-XXXX / INC-XXXX)
+- SLA automático por categoria com alerta visual (ok / warning / breach)
+- TMA (Tempo Médio de Atendimento) calculado e armazenado
+
+### Fila e atribuição
+
+- Fila operacional com filtros por status, tipo e categoria
+- Operadores veem apenas chamados das suas categorias
+- Autoatribuição por timeout via scheduler (round-robin por carga)
+- Atribuição a grupos de operadores
+
+### Patrimônio e estoque
+
+- Cadastro de ativos com tag, tipo, modelo, serial, local e responsável
+- Histórico completo de ciclo de vida do ativo
+- Estoque de consumíveis com alerta de mínimo
+- Entrada por NF em lote (rascunho → preview → confirmação atômica)
+- Catálogo de produtos para agilizar entradas
+- Reversão segura de NF confirmada com validações
+
+### Inteligência e relatórios
+
+- Dashboard com KPIs, aging, top responsáveis e funil
+- Relatórios exportáveis em XLSX e PDF
+- Auditoria completa de logs com filtros e exportação
+- Assistente de IA para abertura e documentação de resolução (Gemini)
+- Base de conhecimento com artigos vinculados a chamados
+
+### Infraestrutura
+
+- Notificações por e-mail (SMTP assíncrono) e in-app
+- Webhooks configuráveis para integração externa
+- Chamados recorrentes (diário, semanal, mensal)
+- Backup automático diário do banco
+- Digest matinal por e-mail
+- Portal externo via token para acompanhamento sem login
+- API REST JSON
+
+---
+
+## Perfis de acesso
+
+| Perfil | Escopo |
+|---|---|
+| **admin** | Acesso total — usuários, categorias, aprovações, logs, configurações |
+| **operador** | Fila, chamados das suas categorias, ativos, estoque, NF |
+| **solicitante** | Abertura e acompanhamento dos próprios chamados |
+
+---
+
+## Segurança
 
 | Proteção | Implementação |
 |---|---|
-| **CSRF** | Flask-WTF — token automático em todos os formulários POST; fetch do Kanban envia `X-CSRFToken` via header |
-| **Rate Limiting** | flask-limiter — login limitado a 10 tentativas/min por IP; criação de chamados limitada a 20/h (solicitante) e 60/h (operador/admin); API limitada a 200 req/h |
-| **Senhas** | Hashed com Werkzeug (PBKDF2-SHA256) |
-| **Sessões** | Flask session assinada com `SECRET_KEY` |
-| **Uploads** | Validação de extensão + nome sanitizado com `secure_filename` |
+| CSRF | Flask-WTF com token automático em todos os formulários |
+| Rate limiting | flask-limiter — login 10/min, chamados 20-60/h, API 300/h |
+| Senhas | Hash com Werkzeug (PBKDF2-SHA256) |
+| Sessões | Cookie assinado com SECRET_KEY + expiração por inatividade (8h) |
+| Uploads | Validação de extensão + `secure_filename` |
+| Permissões | Decorators `@login_required` e `@role_required` por rota |
+| Banco | PRAGMA foreign_keys=ON, WAL mode, 16 índices de performance |
 
-> Em produção, configure `RATELIMIT_STORAGE_URI=redis://...` para que os limites persistam entre reinicializações do servidor.
+---
 
-## 🚀 Como rodar localmente
+## Arquitetura
+
+O projeto segue uma arquitetura em camadas com separação clara de responsabilidades:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  USUÁRIOS          Solicitante · Operador · Admin · Portal  │
+├─────────────────────────────────────────────────────────────┤
+│  APRESENTAÇÃO      Jinja2 + HTML/CSS/JS + Chart.js          │
+│                    Dashboard · Chamados · Fila · Kanban      │
+│                    Ativos · Estoque · NF · KB · Admin        │
+├─────────────────────────────────────────────────────────────┤
+│  ROTAS (Flask)     12 módulos de rota organizados por        │
+│                    domínio: tickets, queue, workflow,         │
+│                    approval, search, logs, comments...        │
+├─────────────────────────────────────────────────────────────┤
+│  SERVIÇOS          16 serviços de negócio independentes:     │
+│                    ticket · sla · approval · workflow         │
+│                    comment · webhook · group · category       │
+│                    asset · stock · nf · search · dashboard    │
+│                    auth · user · catalogo                     │
+├─────────────────────────────────────────────────────────────┤
+│  INFRAESTRUTURA    Notificações · Webhooks · Scheduler       │
+│                    CSRF · Rate Limit · Auth/RBAC              │
+├─────────────────────────────────────────────────────────────┤
+│  BASE              constants.py · helpers.py · config.py     │
+│                    extensions.py · db.py                      │
+├─────────────────────────────────────────────────────────────┤
+│  DADOS (SQLite)    Chamados · Usuários · Patrimônio          │
+│                    Conhecimento · Sistema                     │
+├─────────────────────────────────────────────────────────────┤
+│  INTEGRAÇÕES       SMTP · Gemini AI · Webhooks · Sentry      │
+├─────────────────────────────────────────────────────────────┤
+│  BACKGROUND JOBS   Backup · Digest · Autoatribuição          │
+│  (APScheduler)     Recorrentes · Limpeza NF                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+> O diagrama completo editável está disponível em [`docs/CcTI_Desk_Arquitetura_v3.drawio`](docs/CcTI_Desk_Arquitetura_v3.drawio) — abra no [draw.io](https://app.diagrams.net).
+
+### Estrutura de diretórios
+
+```
+app/
+├── __init__.py              # Factory do Flask + registro de blueprints
+├── constants.py             # Constantes de negócio centralizadas
+├── helpers.py               # Funções utilitárias compartilhadas
+├── config.py                # Configuração via variáveis de ambiente
+├── db.py                    # Conexão, schema e migrações SQLite
+├── extensions.py            # CSRF + Rate Limiter (instâncias)
+├── models.py                # Camada de compatibilidade (re-exports)
+├── auth/
+│   ├── __init__.py          # Blueprint de autenticação (login/logout)
+│   └── decorators.py        # @login_required, @role_required
+├── routes/                  # 12 módulos de rota por domínio
+│   ├── __init__.py          # Blueprint hub
+│   ├── tickets.py           # CRUD, detalhes, upload, etapas
+│   ├── queue.py             # Fila, kanban
+│   ├── workflow.py          # Transferir, reabrir, devolver, finalizar
+│   ├── approval.py          # Aprovações
+│   ├── comments.py          # Comentários
+│   ├── search.py            # Busca global, avançada, export CSV
+│   ├── logs.py              # Auditoria, export Excel/PDF
+│   ├── groups.py            # Grupos de operadores
+│   ├── webhooks.py          # Configuração de webhooks
+│   ├── recurring.py         # Chamados recorrentes
+│   ├── dashboard.py         # Dashboard, home, index
+│   └── api_routes.py        # Endpoints API (notificações, IA, TMA)
+├── services/                # 16 serviços de negócio
+│   ├── ticket_service.py    # Core: CRUD, status, etapas, anexos
+│   ├── sla_service.py       # SLA e TMA
+│   ├── approval_service.py  # Aprovação/reprovação
+│   ├── workflow_service.py  # Transferência, reabertura, devolução
+│   ├── comment_service.py   # Comentários e notas internas
+│   ├── webhook_service.py   # Disparo de webhooks
+│   ├── group_service.py     # Grupos de operadores
+│   ├── category_service.py  # Categorias de chamados
+│   ├── search_service.py    # Busca avançada
+│   ├── dashboard_service.py # Dashboard e métricas
+│   ├── asset_service.py     # Ativos de TI
+│   ├── stock_service.py     # Estoque de consumíveis
+│   ├── nf_service.py        # Entrada por NF (lote)
+│   ├── auth_service.py      # Autenticação
+│   ├── user_service.py      # Gestão de usuários
+│   ├── catalogo_service.py  # Catálogo de produtos
+│   └── ai/                  # Integração com Gemini AI
+├── admin.py                 # Gestão de usuários e categorias
+├── assets_admin.py          # Interface de ativos
+├── stock.py                 # Interface de estoque
+├── nf.py                    # Interface de NF
+├── catalogo.py              # Interface de catálogo
+├── kb.py                    # Base de conhecimento
+├── portal.py                # Portal externo via token
+├── api.py                   # API REST
+├── reports.py               # Relatórios
+├── scheduler.py             # Jobs em background
+├── notifications.py         # Sistema de notificações in-app
+├── notify.py                # Envio de e-mail assíncrono
+├── ai_service.py            # Orquestração da IA
+├── templates/               # 30+ templates Jinja2
+└── static/                  # CSS (design system próprio)
+tests/
+└── test_smoke.py            # Suite com pytest (30+ casos)
+docs/
+└── CcTI_Desk_Arquitetura_v3.drawio  # Diagrama de arquitetura
+```
+
+---
+
+## Início rápido
+
+### Requisitos
+
+- Python 3.11+
+- pip
+
+### Instalação
 
 ```bash
-# Clone e entre na pasta
 git clone <seu-repo>
-cd projeto
+cd ccti-desk
 
-# Crie o ambiente virtual e instale dependências
 python -m venv .venv
 source .venv/bin/activate       # Linux/Mac
-.venv\Scripts\activate          # Windows
+# .venv\Scripts\activate        # Windows
 
 pip install -r requirements.txt
+```
 
-# Inicialize o banco
-python -m app.cli init-db
+### Executar
 
-# Rode o servidor
+```bash
 python run.py
 ```
 
-Acesse em [http://localhost:5000](http://localhost:5000)
+Acesse em [http://localhost:5000](http://localhost:5000).
 
-**Login padrão:**
-- E-mail: `admin@local`
-- Senha: `admin123`
+**Login padrão:** `admin@local` / `admin123`
 
-> ⚠️ Altere as credenciais padrão via variáveis de ambiente antes de usar em produção.
+> Altere as credenciais via variáveis de ambiente antes de usar em produção.
 
 ---
 
-## ⚙️ Variáveis de ambiente
+## Configuração
 
-Copie `.env.example` para `.env` e preencha:
+Copie `.env.example` para `.env` e preencha conforme o ambiente:
 
 ```env
-SECRET_KEY=sua-chave-secreta-aqui
-ADMIN_DEFAULT_EMAIL=admin@suaempresa.com
-ADMIN_DEFAULT_PASSWORD=senha-forte-aqui
+# Obrigatório em produção
+SECRET_KEY=gere-com-python-c-import-secrets-print-secrets-token-hex-32
 
-# SMTP para notificações por e-mail (opcional)
+# Admin padrão (criado na 1ª execução)
+ADMIN_DEFAULT_EMAIL=admin@suaempresa.com
+ADMIN_DEFAULT_PASSWORD=senha-forte
+
+# SMTP para e-mails (opcional)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=seu@gmail.com
-SMTP_PASS=sua-senha-de-app
+SMTP_USER=chamados@suaempresa.com
+SMTP_PASS=senha-de-app
 SMTP_FROM=chamados@suaempresa.com
-ALERT_TO_EMAILS=equipe@suaempresa.com
+ALERT_TO_EMAILS=ti@suaempresa.com
+
+# URL pública (usada em e-mails e portal)
+APP_URL=https://chamados.suaempresa.com
+
+# IA assistida (opcional)
+AI_ASSIST_ENABLED=false
+AI_API_KEY=
+AI_MODEL=gemini-1.5-flash
+
+# Regras de negócio
+TICKET_REOPEN_WINDOW_HOURS=48
+ASSIGNMENT_TIMEOUT_MINUTES=15
+SESSION_LIFETIME_HOURS=8
+NF_DRAFT_MAX_AGE_DAYS=30
 ```
+
+Todas as variáveis disponíveis estão documentadas em [`.env.example`](.env.example).
 
 ---
 
-## 🧪 Testes
-
-A suíte foi organizada para funcionar com **pytest** a partir da **raiz do projeto**, usando imports absolutos e mantendo o scheduler desabilitado durante os testes.
-
-### Pré-requisitos
+## Testes
 
 ```bash
-pip install -r requirements.txt
+python -m pytest          # execução padrão
+python -m pytest -v       # modo detalhado
 ```
 
-### Como executar
-
-```bash
-python -m pytest
-```
-
-ou, se quiser mais detalhes:
-
-```bash
-python -m pytest -v
-```
-
-### O que foi ajustado na infraestrutura de testes
-
-- `pytest.ini` define `pythonpath = .` e `testpaths = tests`
-- `tests/conftest.py` garante a raiz do projeto no `sys.path`
-- o `APScheduler` continua mockado nos testes e não inicia jobs reais
-- `create_app(config_object=...)` agora aceita configuração de teste antes da inicialização completa da aplicação
-
-A suíte cobre: importação da app, autenticação, criação e validação de chamados, paginação, permissões por perfil, API, recorrência, backup, digest e regras principais de negócio.
+A suíte cobre autenticação, permissões por perfil, criação e validação de chamados, paginação, API, recorrência, backup, digest e regras de negócio. O APScheduler é desabilitado automaticamente durante os testes.
 
 ---
 
-## 🌐 Deploy
-
-### Render (gratuito)
-```bash
-# Já inclui render.yaml configurado
-git push origin main
-# Configure as env vars no painel do Render
-```
+## Deploy
 
 ### Docker
+
 ```bash
 docker compose up --build
 ```
 
----
+### Render
 
-## 📁 Estrutura do projeto
+O projeto inclui `render.yaml` pronto. Basta conectar o repositório e configurar as variáveis de ambiente no painel do Render.
 
-```
-app/
-├── __init__.py          # Factory da aplicação Flask
-├── models.py            # Toda a lógica de dados e queries
-├── routes.py            # Rotas principais (chamados)
-├── auth.py              # Autenticação e decoradores de permissão
-├── admin.py             # Gestão de usuários
-├── api.py               # API REST JSON
-├── reports.py           # Relatórios e exportações
-├── assets_admin.py      # Módulo de ativos de TI
-├── notify.py            # Sistema de notificações por e-mail (async)
-├── db.py                # Conexão, schema e migrações SQLite
-├── config.py            # Configurações via env vars
-├── services/            # Camada de serviço (auth, users, assets, reports)
-├── templates/           # Templates Jinja2
-└── static/              # CSS (design system próprio, tema dark)
-tests/
-└── test_smoke.py        # Suite de testes com pytest (30+ casos)
+### Produção (gunicorn)
+
+```bash
+gunicorn run:app --bind 0.0.0.0:5000
 ```
 
----
-# 🎫 Gerenciador de Chamados, Compras e Envios de TI
-
-Sistema web completo para gestão operacional de chamados de suporte, compras e envios de equipamentos de TI — desenvolvido em **Python · Flask · SQLite**.
-
-> **Stack:** Python 3.11+ · Flask 3 · SQLite · Jinja2 · Chart.js · HTML/CSS puro (sem framework)
+Para rate limiting persistente entre workers, configure `RATELIMIT_STORAGE_URI=redis://...`.
 
 ---
 
-# 🎬 Demonstração do Sistema
+## Tecnologias
 
-## Login
-![Login](img/Menu_Login.png)
-
-## Tela inicial
-![Inicio](img/Inicio.png)
-
----
-
-# 📊 Dashboard
-
-![Dashboard](img/Dashboard.png)
-
-![Dashboard Ativos](img/Dash_Ativos.png)
+| Camada | Tecnologias |
+|---|---|
+| Backend | Python 3.11, Flask 3, Werkzeug, SQLite |
+| Frontend | HTML5, CSS3 (design system próprio, dark theme), Chart.js, Vanilla JS |
+| Segurança | Flask-WTF (CSRF), flask-limiter, PBKDF2-SHA256 |
+| Exportação | openpyxl (XLSX), ReportLab (PDF) |
+| Background | APScheduler |
+| IA | Google Gemini (opcional) |
+| Monitoramento | Sentry (opcional) |
+| Deploy | Gunicorn, Docker, Render |
+| Testes | pytest |
 
 ---
 
-# 🎫 Gestão de Chamados
+## Licença
 
-## Fila operacional
-![Fila Chamados](img/Fila_Chamados.png)
-
-## Lista de chamados
-![Lista Chamados](img/Lista_Cards_Chamados.png)
-
-## Tratamento do chamado
-![Tratamento Chamado](img/Tratamento_Chamado.png)
-
-## Abertura de chamado
-![Abertura Chamado](img/Abertura_Chamado.png)
-
----
-
-# 🧩 Kanban de Chamados
-
-![Kanban](img/Kanban.gif)
-
----
-
-# 🔎 Busca Geral
-
-![Busca Geral](img/BuscaGeral.gif)
-
----
-
-# 👥 Gestão de Usuários
-
-![Usuarios](img/Usuarios.png)
-
-![Gerenciamento Usuarios](img/Ger_User.gif)
-
----
-
-# 💻 Gestão de Ativos
-
-## Cadastro de ativo
-![Cadastro Ativo](img/Ativo_cadastro.png)
-
-## Demonstração de ativos
-![Ativo Demo](img/AtivoDemo.gif)
-
----
-
-# 🔌 API
-
-![API Status](img/API_Status.gif)
-
----
-
-## ✨ Funcionalidades principais
-
-
-
-
-
-
-
-## 🛠️ Tecnologias
-
-- **Backend:** Python 3.11, Flask 3, Werkzeug, SQLite
-- **Frontend:** HTML5, CSS3 customizado (dark theme), Chart.js, Vanilla JS
-- **Exportação:** openpyxl (XLSX), ReportLab (PDF)
-- **Deploy:** Gunicorn, Docker, Render-ready
-- **Testes:** pytest
-
----
-
-## 📄 Licença
-
-MIT — sinta-se livre para usar, adaptar e distribuir.
+MIT — livre para usar, adaptar e distribuir.

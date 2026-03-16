@@ -132,30 +132,37 @@ def registrar_movimentacao(produto_id: int, tipo: str, quantidade: int,
             f"Estoque insuficiente. Disponível: {p['quantidade_atual']} {p['unidade']}(s)."
         )
 
-    delta = quantidade if tipo == TIPO_ENTRADA else -quantidade
-    if tipo == TIPO_AJUSTE:
-        delta = quantidade  # ajuste é absoluto: seta nova quantidade
-
     db = get_db()
     t = _now()
 
     if tipo == TIPO_AJUSTE:
+        # Ajuste é absoluto — seta nova quantidade e registra a diferença real para rastreio
+        qtd_anterior = p["quantidade_atual"]
+        diferenca = quantidade - qtd_anterior
         db.execute(
             "UPDATE stock_produtos SET quantidade_atual=?, atualizado_em=? WHERE id=?",
             (quantidade, t, produto_id),
         )
+        # A movimentação guarda a diferença real (pode ser negativa) para o histórico ser legível
+        motivo_ajuste = motivo or f"Ajuste manual: {qtd_anterior} → {quantidade} (diferença: {diferenca:+d})"
+        db.execute(
+            """INSERT INTO stock_movimentacoes
+               (produto_id, tipo, quantidade, motivo, ticket_id, usuario, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (produto_id, tipo, quantidade, motivo_ajuste, ticket_id or None, usuario, t),
+        )
     else:
+        delta = quantidade if tipo == TIPO_ENTRADA else -quantidade
         db.execute(
             "UPDATE stock_produtos SET quantidade_atual=quantidade_atual+?, atualizado_em=? WHERE id=?",
             (delta, t, produto_id),
         )
-
-    db.execute(
-        """INSERT INTO stock_movimentacoes
-           (produto_id, tipo, quantidade, motivo, ticket_id, usuario, criado_em)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (produto_id, tipo, quantidade, motivo, ticket_id or None, usuario, t),
-    )
+        db.execute(
+            """INSERT INTO stock_movimentacoes
+               (produto_id, tipo, quantidade, motivo, ticket_id, usuario, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (produto_id, tipo, quantidade, motivo, ticket_id or None, usuario, t),
+        )
     db.commit()
 
 
@@ -232,3 +239,31 @@ def stock_dashboard():
         "by_cat": by_cat,
         "alertas_list": alertas_list,
     }
+
+
+# ── Reversão de saídas de chamado cancelado ───────────────────────────
+
+def reverter_saidas_chamado(ticket_id: int, usuario: str = ""):
+    """Reverte todas as saídas de estoque vinculadas a um chamado cancelado."""
+    db = get_db()
+    saidas = db.execute(
+        "SELECT produto_id, quantidade FROM stock_movimentacoes WHERE ticket_id=? AND tipo=?",
+        (ticket_id, TIPO_SAIDA)
+    ).fetchall()
+    if not saidas:
+        return 0
+    t = _now()
+    for s in saidas:
+        db.execute(
+            "UPDATE stock_produtos SET quantidade_atual=quantidade_atual+?, atualizado_em=? WHERE id=?",
+            (s["quantidade"], t, s["produto_id"])
+        )
+        db.execute(
+            """INSERT INTO stock_movimentacoes
+               (produto_id, tipo, quantidade, motivo, ticket_id, usuario, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (s["produto_id"], TIPO_ENTRADA, s["quantidade"],
+             f"Reversão automática — chamado #{ticket_id} cancelado", ticket_id, usuario, t)
+        )
+    db.commit()
+    return len(saidas)

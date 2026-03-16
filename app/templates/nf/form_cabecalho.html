@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card" style="max-width:680px;">
+<section class="card" style="max-width:760px;">
 
-  {# Indicador de progresso #}
   <div style="display:flex;gap:0;margin-bottom:24px;border-radius:10px;overflow:hidden;border:1px solid var(--b1);">
     <div style="flex:1;padding:10px 14px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;text-align:center;">1 — Cabeçalho da NF</div>
     <div style="flex:1;padding:10px 14px;background:var(--s2);color:var(--muted);font-size:12px;font-weight:700;text-align:center;">2 — Itens</div>
@@ -10,7 +9,13 @@
   </div>
 
   <h1>{{ 'Editar NF' if entrada else 'Nova entrada por NF' }}</h1>
-  <p class="muted" style="margin-bottom:20px;">Preencha os dados fiscais uma única vez. No próximo passo você adiciona os equipamentos.</p>
+  <p class="muted" style="margin-bottom:20px;">
+    {% if allow_header_only %}
+      Esta NF já foi confirmada. Aqui você pode ajustar apenas os dados de cabeçalho para fins administrativos, sem alterar os itens já lançados.
+    {% else %}
+      Preencha os dados fiscais uma única vez. No próximo passo você adiciona os equipamentos.
+    {% endif %}
+  </p>
 
   <form method="post" class="form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -27,17 +32,31 @@
         <input name="fornecedor" value="{{ entrada.fornecedor if entrada else '' }}"
                placeholder="ex: Dell Brasil, Samsung, Amazon…">
       </label>
-      <label>Base / Escritório de destino
+      <label>Localização / destino
         <input name="base_destino" value="{{ entrada.base_destino if entrada else '' }}"
                placeholder="ex: Sede SP, Filial RJ, Armário TI…">
       </label>
+      {% if entrada %}
+      <label>Data de cadastro
+        <input value="{{ entrada.criado_em[:16].replace('T', ' ') if entrada.criado_em else '' }}" disabled>
+      </label>
+      <label>Última atualização
+        <input value="{{ (entrada.atualizado_em or entrada.criado_em)[:16].replace('T', ' ') if (entrada.atualizado_em or entrada.criado_em) else '' }}" disabled>
+      </label>
+      {% endif %}
       <label class="span-2">Observações
         <textarea name="observacoes" rows="2" placeholder="Notas adicionais sobre esta entrada…">{{ entrada.observacoes if entrada else '' }}</textarea>
       </label>
     </div>
     <div class="actions">
-      <button class="btn" type="submit">Próximo: adicionar itens →</button>
-      <a class="btn secondary" href="{{ url_for('nf.nf_list') }}">Cancelar</a>
+      <button class="btn" type="submit">
+        {% if allow_header_only %}
+          Salvar cabeçalho
+        {% else %}
+          Próximo: adicionar itens →
+        {% endif %}
+      </button>
+      <a class="btn secondary" href="{{ url_for('nf.nf_detail', eid=entrada.id) if entrada else url_for('nf.nf_list') }}">Cancelar</a>
     </div>
   </form>
 </section>

@@ -158,6 +158,7 @@ CATEGORY_MIGRATIONS = [
     ("template_descricao", "ALTER TABLE categories ADD COLUMN template_descricao TEXT"),
     ("requer_aprovacao", "ALTER TABLE categories ADD COLUMN requer_aprovacao INTEGER NOT NULL DEFAULT 0"),
     ("valor_aprovacao_limite", "ALTER TABLE categories ADD COLUMN valor_aprovacao_limite REAL"),
+    ("prioridade_padrao", "ALTER TABLE categories ADD COLUMN prioridade_padrao TEXT"),
 ]
 
 def get_db():
@@ -242,6 +243,7 @@ def migrate_db():
             template_descricao TEXT,
             requer_aprovacao INTEGER NOT NULL DEFAULT 0,
             valor_aprovacao_limite REAL,
+            prioridade_padrao TEXT,
             criado_em TEXT NOT NULL
         );""")
     else:
@@ -455,6 +457,7 @@ def migrate_db():
             usuario TEXT,
             status TEXT NOT NULL DEFAULT 'RASCUNHO',
             criado_em TEXT NOT NULL,
+            atualizado_em TEXT,
             confirmado_em TEXT
         );""")
 
@@ -535,6 +538,34 @@ def migrate_db():
             db.execute("ALTER TABLE entradas_nf ADD COLUMN cancelado_em TEXT")
         if "expira_em" not in existing_nf_cols:
             db.execute("ALTER TABLE entradas_nf ADD COLUMN expira_em TEXT")
+        if "atualizado_em" not in existing_nf_cols:
+            db.execute("ALTER TABLE entradas_nf ADD COLUMN atualizado_em TEXT")
+            db.execute("UPDATE entradas_nf SET atualizado_em = criado_em WHERE atualizado_em IS NULL")
+
+    # ── Índices de performance ──────────────────────────────────────────
+    _INDEXES = [
+        "CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)",
+        "CREATE INDEX IF NOT EXISTS idx_tickets_categoria ON tickets(categoria_id)",
+        "CREATE INDEX IF NOT EXISTS idx_tickets_assigned ON tickets(assigned_user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_tickets_requester ON tickets(requester_user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_tickets_classificacao ON tickets(classificacao)",
+        "CREATE INDEX IF NOT EXISTS idx_tickets_numero ON tickets(numero_chamado)",
+        "CREATE INDEX IF NOT EXISTS idx_ticket_log_ticket ON ticket_log(ticket_id)",
+        "CREATE INDEX IF NOT EXISTS idx_ticket_log_evento ON ticket_log(evento)",
+        "CREATE INDEX IF NOT EXISTS idx_attachments_ticket ON attachments(ticket_id)",
+        "CREATE INDEX IF NOT EXISTS idx_ticket_steps_ticket ON ticket_steps(ticket_id)",
+        "CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket ON ticket_comments(ticket_id)",
+        "CREATE INDEX IF NOT EXISTS idx_assets_tag ON assets(tag)",
+        "CREATE INDEX IF NOT EXISTS idx_assets_status ON assets(status)",
+        "CREATE INDEX IF NOT EXISTS idx_stock_mov_produto ON stock_movimentacoes(produto_id)",
+        "CREATE INDEX IF NOT EXISTS idx_stock_mov_ticket ON stock_movimentacoes(ticket_id)",
+        "CREATE INDEX IF NOT EXISTS idx_entradas_nf_status ON entradas_nf(status)",
+    ]
+    for idx_sql in _INDEXES:
+        try:
+            db.execute(idx_sql)
+        except Exception:
+            pass  # Tabela pode não existir ainda
 
     db.commit()
 

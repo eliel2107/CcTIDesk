@@ -113,6 +113,7 @@ def create_category_route():
         vlim = request.form.get("valor_aprovacao_limite","").strip()
         checklist_raw = request.form.get("checklist_padrao","").strip()
         checklist = json.dumps([l for l in checklist_raw.splitlines() if l.strip()]) if checklist_raw else None
+        prioridade_padrao = (request.form.get("prioridade_padrao", "").strip().upper() or None)
         create_category_full(
             nome=request.form.get("nome", ""),
             descricao=request.form.get("descricao", ""),
@@ -123,6 +124,7 @@ def create_category_route():
             template_descricao=request.form.get("template_descricao","").strip() or None,
             requer_aprovacao=request.form.get("requer_aprovacao") == "1",
             valor_aprovacao_limite=float(vlim) if vlim else None,
+            prioridade_padrao=prioridade_padrao,
         )
         flash("Categoria criada com sucesso.", "success")
     except Exception as e:
@@ -140,6 +142,7 @@ def edit_category_route(category_id: int):
         vlim = request.form.get("valor_aprovacao_limite","").strip()
         checklist_raw = request.form.get("checklist_padrao","").strip()
         checklist = json.dumps([l for l in checklist_raw.splitlines() if l.strip()]) if checklist_raw else None
+        prioridade_padrao = (request.form.get("prioridade_padrao", "").strip().upper() or None)
         update_category_full(
             category_id=category_id,
             nome=request.form.get("nome", ""),
@@ -152,6 +155,7 @@ def edit_category_route(category_id: int):
             template_descricao=request.form.get("template_descricao","").strip() or None,
             requer_aprovacao=request.form.get("requer_aprovacao") == "1",
             valor_aprovacao_limite=float(vlim) if vlim else None,
+            prioridade_padrao=prioridade_padrao,
         )
         flash("Categoria atualizada.", "success")
     except Exception as e:
