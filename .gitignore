@@ -6,4 +6,3 @@ instance/
 .env
 instance/
 .DEPLOY.md
-.env.example
