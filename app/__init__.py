@@ -8,10 +8,12 @@ from .db import init_app as init_db_app
 from .cli import init_cli
 
 
-def create_app():
+def create_app(config_object=None):
     app = Flask(__name__, instance_relative_config=True)
     cfg = Config()
     app.config.from_object(cfg)
+    if config_object is not None:
+        app.config.from_object(config_object)
 
     os.makedirs(app.instance_path, exist_ok=True)
     os.makedirs(os.path.join(app.instance_path, "uploads"), exist_ok=True)
@@ -72,7 +74,9 @@ def create_app():
         return f"{m}min"
 
     # ── Scheduler (backup + digest + recorrência) ─────────────────────────
-    _init_scheduler(app)
+    scheduler_disabled = app.config.get("TESTING", False) or os.getenv("DISABLE_SCHEDULER", "").lower() in {"1", "true", "yes"}
+    if not scheduler_disabled:
+        _init_scheduler(app)
 
     # ── Blueprints ────────────────────────────────────────────────────────
     from .routes import bp as routes_bp

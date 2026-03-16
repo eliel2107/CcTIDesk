@@ -1374,7 +1374,7 @@ def recurring_create():
         (titulo, request.form.get("frequencia","mensal"),
          request.form.get("dia_execucao") or None,
          request.form.get("hora_execucao","08:00"),
-         _json.dumps(ticket_data), _now())
+         _json.dumps(ticket_data), datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     )
     db.commit()
     flash(f"Chamado recorrente '{titulo}' criado.", "success")

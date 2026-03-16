@@ -44,8 +44,7 @@ def app():
             self.SECRET_KEY = "test-secret-features"
             self.SMTP_HOST = ""  # desabilita e-mail
 
-    application = create_app()
-    application.config.from_object(TestConfig())
+    application = create_app(TestConfig())
     with application.app_context():
         from app.db import init_db
         init_db()
@@ -263,7 +262,7 @@ def test_reenviar_ticket_goes_to_assigned(app):
         from app.services.user_service import create_user
         from app.db import get_db
 
-        op_id = create_user("Op Reenv", "op_reenv@test.com", "s123", role="operador")
+        op_id = create_user("Op Reenv", "op_reenv@test.com", "senha123", role="operador")
         tid = create_ticket({"tipo": "COMPRA", "titulo": "Reenvio test",
                               "prioridade": "MEDIA", "solicitante": "User"})
         # Atribuir manualmente
@@ -412,7 +411,7 @@ def test_daily_digest_sends_when_smtp_configured(app):
         app.config["SMTP_HOST"] = "smtp.fake.com"
         app.config["ALERT_TO_EMAILS"] = ["admin@test.com"]
         try:
-            with patch("app.scheduler.notify_async") as mock_notify:
+            with patch("app.notify.notify_async") as mock_notify:
                 from app.scheduler import run_daily_digest
                 run_daily_digest(app)
                 mock_notify.assert_called_once()
@@ -463,7 +462,7 @@ def test_devolver_route_notifies_requester(app, auth):
         from app.db import get_db
         from app.services.user_service import create_user
 
-        req_id = create_user("Req Notif", "req_notif@test.com", "r123", role="solicitante")
+        req_id = create_user("Req Notif", "req_notif@test.com", "req12345", role="solicitante")
         tid = create_ticket({"tipo": "COMPRA", "titulo": "Devolucao notif test",
                               "prioridade": "MEDIA", "requester_user_id": req_id})
 

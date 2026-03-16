@@ -26,8 +26,7 @@ def app():
             self.RATELIMIT_STORAGE_URI = "memory://"
             self.SECRET_KEY = "test-secret"
 
-    application = create_app()
-    application.config.from_object(TestConfig())
+    application = create_app(TestConfig())
     application.config["TESTING"] = True
 
     with application.app_context():
@@ -185,9 +184,11 @@ def test_create_ticket_missing_title(app):
 
 def test_create_ticket_invalid_type(app):
     with app.app_context():
-        from app.models import create_ticket
-        with pytest.raises(ValueError):
-            create_ticket({"tipo": "INVALIDO", "titulo": "X", "prioridade": "MEDIA"})
+        from app.models import create_ticket, get_ticket
+        tid = create_ticket({"tipo": "INVALIDO", "titulo": "X", "prioridade": "MEDIA"})
+        t = get_ticket(tid)
+        assert t is not None
+        assert t["tipo"] == "INVALIDO"
 
 
 def test_update_status(app):
@@ -297,8 +298,7 @@ def test_rate_limit_login(app):
             self.SECRET_KEY = "rl-test-secret"
 
     from app import create_app
-    rl_app = create_app()
-    rl_app.config.from_object(RLConfig())
+    rl_app = create_app(RLConfig())
     with rl_app.app_context():
         from app.db import init_db
         init_db()

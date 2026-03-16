@@ -34,11 +34,12 @@ def create_user(nome: str, email: str, password: str, role: str = "operador", ac
         raise ValueError(f"Perfil inválido. Use: {', '.join(ROLES)}")
 
     db = get_db()
-    db.execute(
+    cur = db.execute(
         "INSERT INTO users (nome, email, password_hash, role, active, created_em) VALUES (?, ?, ?, ?, ?, ?)",
         (nome, email, generate_password_hash(password), role, 1 if active else 0, now()),
     )
     db.commit()
+    return cur.lastrowid
 
 def update_user(user_id: int, nome: str, email: str, role: str, active: bool):
     nome = (nome or "").strip()

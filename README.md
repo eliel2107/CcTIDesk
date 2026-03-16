@@ -100,12 +100,34 @@ ALERT_TO_EMAILS=equipe@suaempresa.com
 
 ## 🧪 Testes
 
+A suíte foi organizada para funcionar com **pytest** a partir da **raiz do projeto**, usando imports absolutos e mantendo o scheduler desabilitado durante os testes.
+
+### Pré-requisitos
+
 ```bash
-pip install pytest
-pytest tests/ -v
+pip install -r requirements.txt
 ```
 
-A suite cobre: importação da app, autenticação, criação e validação de chamados, paginação, permissões por perfil e endpoints da API.
+### Como executar
+
+```bash
+python -m pytest
+```
+
+ou, se quiser mais detalhes:
+
+```bash
+python -m pytest -v
+```
+
+### O que foi ajustado na infraestrutura de testes
+
+- `pytest.ini` define `pythonpath = .` e `testpaths = tests`
+- `tests/conftest.py` garante a raiz do projeto no `sys.path`
+- o `APScheduler` continua mockado nos testes e não inicia jobs reais
+- `create_app(config_object=...)` agora aceita configuração de teste antes da inicialização completa da aplicação
+
+A suíte cobre: importação da app, autenticação, criação e validação de chamados, paginação, permissões por perfil, API, recorrência, backup, digest e regras principais de negócio.
 
 ---
 
