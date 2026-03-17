@@ -37,8 +37,19 @@ def list_assets(filters=None):
     if tipo:
         q += " AND tipo=?"
         params.append(tipo)
+    base = clean(filters.get("local_base"))
+    if base:
+        q += " AND local_base=?"
+        params.append(base)
     q += " ORDER BY atualizado_em DESC, id DESC"
     return db.execute(q, params).fetchall()
+
+def list_bases():
+    """Retorna todas as bases distintas cadastradas nos ativos."""
+    rows = get_db().execute(
+        "SELECT DISTINCT local_base FROM assets WHERE local_base IS NOT NULL AND local_base != '' ORDER BY local_base ASC"
+    ).fetchall()
+    return [r["local_base"] for r in rows]
 
 def list_assets_for_select():
     return get_db().execute("SELECT id, tag, tipo, modelo, status FROM assets ORDER BY tag ASC").fetchall()
@@ -155,11 +166,13 @@ def get_asset_history(asset_id: int):
         (asset_id,)
     ).fetchall()
 
-def asset_dashboard():
+def asset_dashboard(local_base: str = ""):
     db = get_db()
-    total = db.execute("SELECT COUNT(*) as c FROM assets").fetchone()["c"]
-    by_status = {r["status"]: r["total"] for r in db.execute("SELECT status, COUNT(*) as total FROM assets GROUP BY status").fetchall()}
-    by_tipo = {r["tipo"]: r["total"] for r in db.execute("SELECT tipo, COUNT(*) as total FROM assets GROUP BY tipo").fetchall()}
+    where = "WHERE local_base=?" if local_base else ""
+    params = [local_base] if local_base else []
+    total = db.execute(f"SELECT COUNT(*) as c FROM assets {where}", params).fetchone()["c"]
+    by_status = {r["status"]: r["total"] for r in db.execute(f"SELECT status, COUNT(*) as total FROM assets {where} GROUP BY status", params).fetchall()}
+    by_tipo = {r["tipo"]: r["total"] for r in db.execute(f"SELECT tipo, COUNT(*) as total FROM assets {where} GROUP BY tipo", params).fetchall()}
     return {"total": total, "by_status": by_status, "by_tipo": by_tipo}
 
 def delete_asset(asset_id: int):

@@ -14,7 +14,9 @@ def load_logged_user():
         pass
     ensure_default_admin()
     user_id = session.get("user_id")
-    g.user = get_user(user_id) if user_id else None
+    # Converte sqlite3.Row para dict — permite .get(), json.dumps(), etc.
+    raw = get_user(user_id) if user_id else None
+    g.user = dict(raw) if raw else None
 
 def login_required(view):
     @wraps(view)

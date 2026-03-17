@@ -1,8 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="card">
-  <h1>Dashboard de Ativos</h1>
-  <div class="muted">Visão consolidada do parque de ativos cadastrado.</div>
+  <div class="detail-head">
+    <div>
+      <h1>Dashboard de Ativos</h1>
+      <div class="muted">Visão consolidada do parque de ativos cadastrado.</div>
+    </div>
+  </div>
+
+  <form method="get" class="filters" style="margin-bottom:1rem;">
+    <div class="grid">
+      <label>Filtrar por base
+        <select name="local_base" onchange="this.form.submit()">
+          <option value="">(todas as bases)</option>
+          {% for b in bases %}
+            <option value="{{ b }}" {% if local_base == b %}selected{% endif %}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    {% if local_base %}
+      <a class="btn secondary" href="{{ url_for('assets_admin.assets_dashboard') }}">Limpar filtro</a>
+    {% endif %}
+  </form>
 
   <div class="kpi-grid">
     <div class="kpi">

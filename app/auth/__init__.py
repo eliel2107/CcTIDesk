@@ -10,7 +10,9 @@ bp = Blueprint("auth", __name__, url_prefix="/auth")
 @bp.before_app_request
 def load_logged_user():
     user_id = session.get("user_id")
-    g.user = get_user(user_id) if user_id else None
+    # Converte sqlite3.Row para dict — permite .get(), json.dumps(), etc.
+    raw = get_user(user_id) if user_id else None
+    g.user = dict(raw) if raw else None
 
 
 # Re-export decorators para compatibilidade com imports antigos:

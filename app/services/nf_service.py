@@ -270,6 +270,10 @@ def _reverter_nf_confirmada(entrada_id: int, usuario: str = "admin"):
     ).fetchall()
     for ativo in ativos:
         db.execute("DELETE FROM asset_history WHERE asset_id=?", (ativo["id"],))
+        # Remove vínculo em tickets antes de deletar o asset (FK constraint)
+        db.execute("UPDATE tickets SET asset_id=NULL WHERE asset_id=?", (ativo["id"],))
+        # Remove vínculo em entradas_nf_assets antes de deletar o asset (FK constraint)
+        db.execute("DELETE FROM entradas_nf_assets WHERE asset_id=?", (ativo["id"],))
         db.execute("DELETE FROM assets WHERE id=?", (ativo["id"],))
 
     consumiveis = db.execute(

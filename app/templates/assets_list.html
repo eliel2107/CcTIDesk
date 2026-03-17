@@ -37,6 +37,12 @@
           {% for t in ASSET_TYPES %}<option value="{{ t }}" {% if filters.tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
         </select>
       </label>
+      <label>Base
+        <select name="local_base">
+          <option value="">(todas)</option>
+          {% for b in bases %}<option value="{{ b }}" {% if filters.local_base == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+        </select>
+      </label>
     </div>
     <div class="actions">
       <button class="btn" type="submit">Filtrar</button>

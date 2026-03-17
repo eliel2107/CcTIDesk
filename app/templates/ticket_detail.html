@@ -261,7 +261,7 @@
           <label>Novo status
             <select name="status" required>
               {% for s in STATUSES %}
-                {% if s not in ('AGUARDANDO_CONFIRMACAO', 'CONCLUIDO') %}
+                {% if s not in ('AGUARDANDO_CONFIRMACAO',) %}
                 <option value="{{ s }}" {% if s == ticket.status %}selected{% endif %}>{{ s.replace('_',' ') }}</option>
                 {% endif %}
               {% endfor %}

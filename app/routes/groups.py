@@ -7,6 +7,7 @@ from app.auth.decorators import login_required, role_required
 from app.services.group_service import (
     list_groups, get_group, create_group, update_group,
     set_group_members, set_group_categories, get_group_members, get_group_categories,
+    assign_ticket_to_group,
 )
 from app.services.category_service import list_categories
 from app.services.user_service import list_users
@@ -54,3 +55,19 @@ def edit_group_route(group_id: int):
     set_group_categories(group_id, category_ids)
     flash("Grupo atualizado.", "success")
     return redirect(url_for("routes.groups_list"))
+
+
+@bp.post("/tickets/<int:ticket_id>/atribuir-grupo")
+@login_required
+@role_required("admin", "operador")
+def assign_group_route(ticket_id: int):
+    group_id = request.form.get("group_id", "")
+    if not group_id or not group_id.isdigit():
+        flash("Selecione um grupo.", "error")
+        return redirect(url_for("routes.ticket_detail", ticket_id=ticket_id))
+    result = assign_ticket_to_group(ticket_id, int(group_id))
+    if result:
+        flash(f"Chamado atribuído a {result['nome']} (menor carga do grupo).", "success")
+    else:
+        flash("Grupo sem membros ativos.", "error")
+    return redirect(url_for("routes.ticket_detail", ticket_id=ticket_id))

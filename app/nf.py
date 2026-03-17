@@ -275,7 +275,7 @@ def nf_add_items_catalogo(eid: int):
 @role_required("admin")
 def nf_excluir(eid: int):
     try:
-        delete_entrada_admin(eid, usuario=g.user.get("nome", "admin"))
+        delete_entrada_admin(eid, usuario=g.user.get("nome", "admin"))  # g.user já é dict
         flash("NF excluída com sucesso.", "success")
     except ValueError as e:
         flash(str(e), "error")

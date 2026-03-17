@@ -89,7 +89,7 @@ def transfer_ticket_route(ticket_id: int):
     if dest["role"] not in ("admin", "operador"):
         flash(f"'{dest['nome']}' é um solicitante e não pode receber chamados.", "error")
         return redirect(url_for("routes.ticket_detail", ticket_id=ticket_id))
-    if not dest.get("active", 1):
+    if not dest["active"]:
         flash(f"'{dest['nome']}' está inativo.", "error")
         return redirect(url_for("routes.ticket_detail", ticket_id=ticket_id))
     try:
