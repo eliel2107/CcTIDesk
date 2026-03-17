@@ -10,31 +10,103 @@ Sistema interno de Service Desk para gestão de chamados, ativos de TI, estoque 
 
 ### Login e tela inicial
 
+Tela de autenticação com validação de credenciais e rate limiting para proteção contra força bruta.
+
 ![Login](img/Menu_Login.png)
-![Inicio](img/Inicio.png)
+
+Menu inicial reformulado com acesso rápido aos principais módulos do sistema, adaptado ao perfil do usuário logado.
+
+| Antes | Depois |
+|---|---|
+| ![Inicio](img/Inicio.png) | ![Inicio Melhorias](img/Inicio_Melhorias.png) |
 
 ### Dashboard
 
+Visão consolidada com KPIs de chamados, aging, top responsáveis, funil de status e gráficos interativos.
+
 ![Dashboard](img/Dashboard.png)
-![Dashboard Ativos](img/Dash_Ativos.png)
+
+Dashboard de ativos com filtro por base/localização, exibindo distribuição por status e tipo em tempo real.
+
+| Antes | Depois |
+|---|---|
+| ![Dash Ativos](img/Dash_Ativos.png) | ![Dash Ativos Melhorias](img/Dash_Ativos_Melhorias.gif) |
 
 ### Chamados
 
-| Fila operacional | Kanban |
-|---|---|
-| ![Fila](img/Fila_Chamados.png) | ![Kanban](img/Kanban.gif) |
+Fila operacional com novos filtros, ordenação e indicadores visuais de SLA e prioridade.
 
-| Abertura de chamado | Tratamento |
+| Antes | Depois |
+|---|---|
+| ![Fila](img/Fila_Chamados.png) | ![Fila Melhoria](img/Fila_Chamados_Melhoria.png) |
+
+Listagem em cards com informações resumidas e visualização Kanban por status.
+
+| Lista de cards | Kanban |
+|---|---|
+| ![Lista](img/Lista_Cards_Chamados.png) | ![Kanban](img/Kanban.gif) |
+
+Abertura de chamado com seleção de categoria e formulário dinâmico. Tratamento com checklist, comentários, anexos e histórico completo.
+
+| Abertura | Tratamento |
 |---|---|
 | ![Abertura](img/Abertura_Chamado.png) | ![Tratamento](img/Tratamento_Chamado.png) |
 
-### Ativos, usuários e API
+Demonstração do fluxo completo de chamados com as melhorias aplicadas — transferência, devolução ao solicitante e finalização com confirmação.
 
-| Ativos | Usuários | API |
-|---|---|---|
-| ![Ativos](img/AtivoDemo.gif) | ![Usuários](img/Ger_User.gif) | ![API](img/API_Status.gif) |
+![Chamados — melhorias](img/Chamados_Melhorias.gif)
+
+### Ativos
+
+Cadastro de ativos com tag, tipo, modelo, serial, base e responsável. Demo completo do ciclo de vida com histórico de movimentações.
+
+| Cadastro | Demo completo |
+|---|---|
+| ![Cadastro Ativo](img/Ativo_cadastro.png) | ![Ativos](img/AtivoDemo.gif) |
+
+### Estoque
+
+Gestão de consumíveis com alertas de estoque mínimo, movimentações e vínculo de consumo por chamado.
+
+![Estoque — melhorias](img/Estoque_Melhorias.gif)
+
+### Entradas de NF
+
+Fluxo de entrada por nota fiscal em lote: rascunho → revisão de itens → confirmação atômica com geração de ativos e movimentação de estoque.
+
+![Entrada NF — melhoria](img/Entrada_NF_melhoria.mp4)
+
+Dashboard de NFs com visão consolidada de entradas, status e valores por período.
+
+![Dashboard NFs — melhorias](img/Dashboard_NFs_Melhorias.gif)
+
+### Usuários e API
+
+Gestão de usuários com controle de perfis (admin, operador, solicitante) e ativação/inativação. API REST com documentação interativa integrada.
+
+| Usuários | API |
+|---|---|
+| ![Usuários](img/Usuarios.png) | ![API](img/API_Status.gif) |
+
+Criação e edição de usuários com definição de perfil, grupos e categorias de atendimento.
+
+![Gestão de Usuários](img/Ger_User.gif)
+
+### Logs e auditoria
+
+Auditoria completa com filtros por ação, usuário e período, exportação em Excel e PDF.
+
+![Logs — melhorias](img/Logs_melhorias.gif)
+
+### Base de conhecimento
+
+Artigos vinculados a categorias de chamados, sugeridos automaticamente na abertura e no tratamento.
+
+![Base de Conhecimento — melhorias](img/BasedeConhecimento_Melhorias.gif)
 
 ### Busca global
+
+Busca unificada em chamados, ativos, usuários e base de conhecimento com resultados em tempo real.
 
 ![Busca](img/BuscaGeral.gif)
 
@@ -122,41 +194,9 @@ Sistema interno de Service Desk para gestão de chamados, ativos de TI, estoque 
 
 O projeto segue uma arquitetura em camadas com separação clara de responsabilidades:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  USUÁRIOS          Solicitante · Operador · Admin · Portal  │
-├─────────────────────────────────────────────────────────────┤
-│  APRESENTAÇÃO      Jinja2 + HTML/CSS/JS + Chart.js          │
-│                    Dashboard · Chamados · Fila · Kanban      │
-│                    Ativos · Estoque · NF · KB · Admin        │
-├─────────────────────────────────────────────────────────────┤
-│  ROTAS (Flask)     12 módulos de rota organizados por        │
-│                    domínio: tickets, queue, workflow,         │
-│                    approval, search, logs, comments...        │
-├─────────────────────────────────────────────────────────────┤
-│  SERVIÇOS          16 serviços de negócio independentes:     │
-│                    ticket · sla · approval · workflow         │
-│                    comment · webhook · group · category       │
-│                    asset · stock · nf · search · dashboard    │
-│                    auth · user · catalogo                     │
-├─────────────────────────────────────────────────────────────┤
-│  INFRAESTRUTURA    Notificações · Webhooks · Scheduler       │
-│                    CSRF · Rate Limit · Auth/RBAC              │
-├─────────────────────────────────────────────────────────────┤
-│  BASE              constants.py · helpers.py · config.py     │
-│                    extensions.py · db.py                      │
-├─────────────────────────────────────────────────────────────┤
-│  DADOS (SQLite)    Chamados · Usuários · Patrimônio          │
-│                    Conhecimento · Sistema                     │
-├─────────────────────────────────────────────────────────────┤
-│  INTEGRAÇÕES       SMTP · Gemini AI · Webhooks · Sentry      │
-├─────────────────────────────────────────────────────────────┤
-│  BACKGROUND JOBS   Backup · Digest · Autoatribuição          │
-│  (APScheduler)     Recorrentes · Limpeza NF                  │
-└─────────────────────────────────────────────────────────────┘
-```
+![Arquitetura CcTI Desk](img/ccti_desk_architecture.svg)
 
-> O diagrama completo editável está disponível em [`docs/CcTI_Desk_Arquitetura_v3.drawio`](docs/CcTI_Desk_Arquitetura_v3.drawio) — abra no [draw.io](https://app.diagrams.net).
+> O diagrama editável está disponível em [`docs/CcTI_Desk_Arquitetura_v3.drawio`](docs/CcTI_Desk_Arquitetura_v3.drawio) — abra no [draw.io](https://app.diagrams.net).
 
 ### Estrutura de diretórios
 
