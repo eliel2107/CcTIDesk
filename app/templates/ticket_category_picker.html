@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="card">
-  <h1>Novo chamado</h1>
+  <div class="eyebrow">SERVICE DESK</div>
+  <h1 style="font-family:'IBM Plex Mono',monospace;">Novo chamado</h1>
   <div class="muted">Selecione a classificação e a categoria do chamado para prosseguir.</div>
 </section>
 
 <section class="card">
-  <h2 style="margin-bottom:12px;">1. Classificação</h2>
+  <div class="eyebrow" style="margin-bottom:6px;">PASSO 1</div>
+  <h2 style="margin-bottom:12px;font-family:'IBM Plex Mono',monospace;">Classificação</h2>
   <div style="display:flex;gap:14px;margin-bottom:28px;" id="classif-group">
     <label class="classif-card selected" data-val="REQUISICAO">
       <input type="radio" name="classif" value="REQUISICAO" checked style="display:none;">
@@ -22,15 +24,19 @@
     </label>
   </div>
 
-  <h2 style="margin-bottom:12px;">2. Categoria</h2>
+  <div class="eyebrow" style="margin-top:24px;margin-bottom:6px;">PASSO 2</div>
+  <h2 style="margin-bottom:12px;font-family:'IBM Plex Mono',monospace;">Categoria</h2>
   {% if not categories %}
     <div class="muted">Nenhuma categoria ativa. Peça ao administrador para cadastrar categorias.</div>
   {% else %}
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;" id="cat-grid">
     {% for cat in categories %}
     <a href="#" class="cat-link" data-url="{{ next_url }}?cat={{ cat.id }}&classif=REQUISICAO" style="text-decoration:none;">
       <div class="category-card" style="--cat-color:{{ cat.cor }}">
-        <div class="category-card__dot"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div class="category-card__dot"></div>
+          <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--cat-color);opacity:.7;font-weight:700;">{{ '%02d'|format(loop.index) }}</span>
+        </div>
         <div class="category-card__name">{{ cat.nome }}</div>
         {% if cat.descricao %}
         <div class="category-card__desc">{{ cat.descricao }}</div>
@@ -79,6 +85,17 @@
 </style>
 
 <script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+  document.querySelectorAll('.category-card').forEach(function(c,i){
+    c.style.animation='fadeUp .35s ease both';
+    c.style.animationDelay=(0.15 + i*0.05)+'s';
+  });
+})();
+
 const cards = document.querySelectorAll(".classif-card");
 let currentClassif = "REQUISICAO";
 

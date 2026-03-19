@@ -2,14 +2,15 @@
 
 {% block content %}
 <section class="card">
-  <h1>Usuários</h1>
+  <div class="eyebrow">Admin</div>
+  <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Usuários</h1>
   <div class="muted">Crie e gerencie usuários do sistema. &nbsp;|&nbsp;
     <a href="{{ url_for('admin.categories') }}">⚙️ Gerenciar categorias</a>
   </div>
 </section>
 
 <section class="card">
-  <h2>Novo usuário</h2>
+  <h2 style="font-family:'IBM Plex Mono',monospace;font-size:1rem;letter-spacing:-.01em;">Novo usuário</h2>
   <form method="post" action="{{ url_for('admin.create_user_route') }}" class="form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid">
@@ -36,7 +37,7 @@
 </section>
 
 <section class="card">
-  <h2>Lista de usuários</h2>
+  <h2 style="font-family:'IBM Plex Mono',monospace;font-size:1rem;letter-spacing:-.01em;">Lista de usuários</h2>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Categorias atendidas</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
@@ -142,6 +143,18 @@
     </table>
   </div>
 </section>
+<script>
+document.querySelectorAll('table tbody tr td:first-child').forEach(function(td){
+  td.style.fontFamily = "'IBM Plex Mono', monospace";
+  td.style.fontSize = ".85rem";
+});
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+})();
+</script>
 {% endblock %}
 
 

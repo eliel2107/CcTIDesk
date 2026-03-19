@@ -1,9 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card">
+<style>
+.kb-form-wrap { max-width: 820px; }
+</style>
+<section class="card kb-form-wrap">
   <div class="detail-head">
-    <div><div class="eyebrow">Base de Conhecimento</div>
-    <h1>{% if art %}Editar artigo{% else %}Novo artigo{% endif %}</h1></div>
+    <div>
+      <div class="eyebrow">BASE DE CONHECIMENTO</div>
+      <h1>{% if art %}Editar artigo{% else %}Novo artigo{% endif %}</h1>
+      <div class="muted">{% if art %}Atualize o conteúdo e as configurações do artigo.{% else %}Documente uma solução para uso futuro.{% endif %}</div>
+    </div>
   </div>
   <form method="post" class="form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -34,4 +40,12 @@
     </div>
   </form>
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}

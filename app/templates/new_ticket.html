@@ -1,35 +1,35 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <a href="{{ url_for('routes.new_ticket') }}" class="btn secondary" style="padding:6px 12px;">← Categoria</a>
+
+<section class="card" style="animation:fadeUp .3s ease both;">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="{{ url_for('routes.new_ticket') }}" class="btn secondary" style="padding:6px 14px;font-size:.82rem;">← Categoria</a>
     <div>
-      <h1 style="margin:0;">Novo chamado</h1>
-      {% if selected_cat %}
-      <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-        <span style="width:10px;height:10px;border-radius:50%;background:{{ selected_cat.cor }};display:inline-block;"></span>
-        <span class="muted" style="font-size:.9rem;">{{ selected_cat.nome }}</span>
-      </div>
+      <div class="eyebrow">Novo chamado</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;margin:2px 0 0;">
+        {% if selected_cat %}{{ selected_cat.nome }}{% else %}Novo chamado{% endif %}
+      </h1>
+      {% if selected_cat and selected_cat.descricao %}
+        <div class="muted" style="font-size:.85rem;margin-top:2px;">{{ selected_cat.descricao }}</div>
       {% endif %}
     </div>
+    {% if selected_cat %}
+    <span style="width:10px;height:10px;border-radius:50%;background:{{ selected_cat.cor }};display:inline-block;margin-left:auto;flex-shrink:0;box-shadow:0 0 8px {{ selected_cat.cor }};"></span>
+    {% endif %}
   </div>
 </section>
 
 {% set campos = campos_visiveis or [] %}
 {% set show_all = campos | length == 0 %}
 
-<script>
-// campos visíveis definidos pelo servidor — sem necessidade de JS dinâmico
-// (categoria já foi escolhida na tela anterior)
-</script>
-
-<section class="card">
+<section class="card" style="animation:fadeUp .35s ease both;">
 <form method="post" action="{{ url_for('routes.create_ticket_route') }}" class="form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% if selected_cat %}
   <input type="hidden" name="categoria_id" value="{{ selected_cat.id }}">
   {% endif %}
   <input type="hidden" name="classificacao" value="{{ classif or 'REQUISICAO' }}">
+
   <div class="grid">
     <label>Prioridade
       <select name="prioridade" required>
@@ -47,7 +47,7 @@
       </select>
     </label>
     {% else %}
-    <div></div>{# grid placeholder #}
+    <div></div>
     {% endif %}
 
     <label class="span-2">Título
@@ -61,9 +61,8 @@
     <label>Responsável <input name="responsavel" placeholder="ex: Eliel / Iago" /></label>
     {% endif %}
 
-    {# Campos exclusivos de compra #}
     {% if show_all or 'fornecedor' in campos %}
-    <label>Fornecedor <input name="fornecedor" placeholder="ex: Kabum / Amazon / Fornecedor X" /></label>
+    <label>Fornecedor <input name="fornecedor" placeholder="ex: Kabum / Amazon" /></label>
     {% endif %}
     {% if show_all or 'centro_custo' in campos %}
     <label>Centro de custo <input name="centro_custo" placeholder="ex: TI-001" /></label>
@@ -75,11 +74,11 @@
     <label>Código de rastreio <input name="codigo_rastreio" placeholder="ex: BR123..." /></label>
     {% endif %}
     {% if show_all or 'link_pedido' in campos %}
-    <label class="span-2">Link do pedido <input name="link_pedido" placeholder="ex: link interno / pedido / cotação" /></label>
+    <label class="span-2">Link do pedido <input name="link_pedido" placeholder="link interno / pedido / cotação" /></label>
     {% endif %}
 
     {% if show_all or 'data_limite' in campos %}
-    <label>Data limite (YYYY-MM-DD) <input name="data_limite" placeholder="ex: 2026-03-15" /></label>
+    <label>Data limite <input name="data_limite" placeholder="YYYY-MM-DD" /></label>
     {% endif %}
     {% if show_all or 'asset' in campos %}
     <label>Ativo vinculado
@@ -92,20 +91,20 @@
 
     {% if show_all or 'descricao' in campos %}
     <label class="span-2">Descrição
-      <textarea name="descricao" rows="4" placeholder="Detalhe: item, quantidade, endereço, justificativa..."></textarea>
+      <textarea name="descricao" rows="5" placeholder="Detalhe: item, quantidade, endereço, justificativa..."></textarea>
     </label>
     {% endif %}
 
     {% if show_all or 'entrega' in campos %}
     <div class="span-2">
-      <div class="divider">Dados de entrega</div>
-      <div class="grid" style="margin-top:10px;">
+      <div class="divider" style="margin:8px 0 16px;">Dados de entrega</div>
+      <div class="grid">
         <div class="span-2">
-          <label>Preencher endereço por base/local (opcional)
+          <label>Preencher por base/local (opcional)
             <select id="presetSelect"><option value="">(selecionar)</option></select>
           </label>
-          <div class="muted" id="presetObs" style="margin-top:6px"></div>
-          <div class="muted" id="senderBox" style="margin-top:8px"></div>
+          <div class="muted" id="presetObs" style="margin-top:6px;font-size:.82rem;"></div>
+          <div class="muted" id="senderBox" style="margin-top:8px;font-size:.82rem;"></div>
         </div>
         <label>Destinatário <input name="destinatario" placeholder="Nome de quem vai receber" /></label>
         <label>Telefone <input name="telefone" placeholder="(xx) xxxxx-xxxx" /></label>

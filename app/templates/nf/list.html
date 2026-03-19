@@ -3,7 +3,8 @@
 <section class="card">
   <div class="detail-head">
     <div>
-      <h1>Entradas por NF</h1>
+      <div class="eyebrow">ENTRADAS NF</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;">Entradas por NF</h1>
       <div class="muted">Registre recebimentos de equipamentos e consumíveis de forma ágil.</div>
     </div>
     <div class="actions">
@@ -52,8 +53,8 @@
           <td class="muted">{{ e.numero_oc or '—' }}</td>
           <td>{{ e.fornecedor or '—' }}</td>
           <td>{{ e.base_destino or '—' }}</td>
-          <td style="font-family:monospace;font-weight:700;">{{ e.total_itens or 0 }}</td>
-          <td style="font-family:monospace;font-weight:700;">{{ e.total_unidades or 0 }}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;">{{ e.total_itens or 0 }}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;">{{ e.total_unidades or 0 }}</td>
           <td>
             {% if e.status == 'RASCUNHO' %}
               <span class="pill pill-pending">Rascunho</span>
@@ -63,7 +64,7 @@
               <span class="pill pill-archived">Cancelada</span>{% if e.expira_em %}<div class="muted" style="font-size:11px;margin-top:4px;">Some em {{ e.expira_em[2:16] }}</div>{% endif %}
             {% endif %}
           </td>
-          <td style="font-size:12px;font-family:monospace;color:var(--muted);">{{ e.criado_em[2:16] }}</td>
+          <td style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted);">{{ e.criado_em[2:16] }}</td>
           <td>
             <div class="actions" style="justify-content:flex-end;gap:6px;flex-wrap:wrap;">
               {% if e.status == 'RASCUNHO' %}
@@ -89,4 +90,19 @@
   </div>
   {% endif %}
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+  // Apply IBM Plex Mono to numeric/date cells via JS
+  document.querySelectorAll('td').forEach(function(td){
+    var txt = td.textContent.trim();
+    if(/^\d{2}[-\/]\d{2}[-\/]\d{2}/.test(txt) || /^\d{2}:\d{2}/.test(txt)){
+      td.style.fontFamily="'IBM Plex Mono',monospace";
+    }
+  });
+})();
+</script>
 {% endblock %}

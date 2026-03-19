@@ -19,7 +19,7 @@
   <div class="logs-toolbar">
     <div>
       <div class="eyebrow">Auditoria</div>
-      <h1>Logs do sistema</h1>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Logs do sistema</h1>
       <div class="muted">Visualize eventos registrados nos chamados sem alterar as melhorias da V14.2.</div>
     </div>
     <div class="logs-count">{{ total }} registro(s) encontrado(s)</div>
@@ -27,7 +27,7 @@
 </section>
 
 <section class="card">
-  <h2>Filtros</h2>
+  <h2 style="font-family:'IBM Plex Mono',monospace;font-size:1rem;letter-spacing:-.01em;">Filtros</h2>
   <form method="get" class="filters">
     <div class="grid">
       <label>Busca
@@ -61,7 +61,7 @@
 </section>
 
 <section class="card">
-  <h2>Últimos registros</h2>
+  <h2 style="font-family:'IBM Plex Mono',monospace;font-size:1rem;letter-spacing:-.01em;">Últimos registros</h2>
   <div class="table-wrap">
     <table>
       <thead>
@@ -104,4 +104,26 @@
     <div class="muted" style="margin-top:12px;">Mostrando os 500 registros mais recentes para manter compatibilidade e desempenho.</div>
   {% endif %}
 </section>
+
+<script>
+(function(){
+  /* Timestamp cells: first column — monospace for readability */
+  document.querySelectorAll('table tbody tr td:first-child').forEach(function(td){
+    td.style.fontFamily = "'IBM Plex Mono', monospace";
+    td.style.fontSize = ".82rem";
+    td.style.whiteSpace = "nowrap";
+    td.style.color = "var(--muted)";
+  });
+  /* Card entrance animations */
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+  /* Table row stagger */
+  document.querySelectorAll('table tbody tr').forEach(function(row,i){
+    row.style.animation='fadeUp .3s ease both';
+    row.style.animationDelay=(0.2 + i*0.03)+'s';
+  });
+})();
+</script>
 {% endblock %}

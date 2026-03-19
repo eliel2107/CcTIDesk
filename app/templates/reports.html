@@ -1,9 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.summary-box strong { font-family: 'IBM Plex Mono', monospace; font-size: 1.5rem; display: block; margin-top: 4px; }
+.report-section { animation: fadeUp .4s ease both; }
+.top-responsavel-count { font-family: 'IBM Plex Mono', monospace; font-weight: 700; }
+.sla-id { font-family: 'IBM Plex Mono', monospace; font-size: .82rem; }
+.sla-days { font-family: 'IBM Plex Mono', monospace; }
+</style>
 <section class="card">
   <div class="detail-head">
     <div>
-      <div class="eyebrow">Relatórios</div>
+      <div class="eyebrow">RELATÓRIOS</div>
       <h1>Análises operacionais</h1>
       <div class="muted">Módulo para acompanhar SLA, tempo médio de resolução e distribuição dos ativos.</div>
     </div>
@@ -73,7 +80,7 @@
           <tr><td colspan="2" class="muted">Nenhum dado.</td></tr>
         {% endif %}
         {% for name, total in ticket_stats.top_responsaveis %}
-          <tr><td>{{ name }}</td><td><strong>{{ total }}</strong></td></tr>
+          <tr><td>{{ name }}</td><td><strong class="top-responsavel-count">{{ total }}</strong></td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -92,15 +99,23 @@
         {% endif %}
         {% for item in outside[:20] %}
           <tr>
-            <td><a href="{{ url_for('routes.ticket_detail', ticket_id=item.id) }}">#{{ item.id }}</a></td>
+            <td><a class="sla-id" href="{{ url_for('routes.ticket_detail', ticket_id=item.id) }}">#{{ item.id }}</a></td>
             <td>{{ item.tipo }}</td>
             <td>{{ item.titulo }}</td>
             <td>{{ item.responsavel or "-" }}</td>
-            <td><strong>{{ item.resolution_days }}</strong></td>
+            <td><strong class="sla-days">{{ item.resolution_days }}</strong></td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}

@@ -1,10 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.kb-content { animation: fadeUp .4s ease both; }
+.kb-article-header { border-left: 4px solid var(--accent); padding-left: 16px; margin-bottom: 8px; }
+.kb-article-title { font-family: 'IBM Plex Mono', monospace; font-size: 1.4rem; line-height: 1.3; }
+.kb-back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--muted); text-decoration: none; margin-bottom: 12px; transition: color .15s; }
+.kb-back-btn:hover { color: var(--accent); }
+</style>
 <section class="card">
+  <a class="kb-back-btn" href="{{ url_for('kb.kb_index') }}">&#8592; Voltar para Base de Conhecimento</a>
   <div class="detail-head">
     <div>
-      <div class="eyebrow">Base de Conhecimento{% if art.categoria_nome %} · {{ art.categoria_nome }}{% endif %}</div>
-      <h1>{{ art.titulo }}</h1>
+      <div class="eyebrow">BASE DE CONHECIMENTO{% if art.categoria_nome %} · {{ art.categoria_nome }}{% endif %}</div>
+      <div class="kb-article-header">
+        <div class="kb-article-title">{{ art.titulo }}</div>
+      </div>
       <div class="muted" style="font-size:.82rem;">
         Por <strong>{{ art.autor_nome }}</strong> · {{ art.atualizado_em[:10] }} · 👁 {{ art.visualizacoes }} visualizações
         {% if not art.publico %} · <span style="color:#f59e0b;">🔒 Interno</span>{% endif %}
@@ -43,4 +53,12 @@
   {% endfor %}
 </section>
 {% endif %}
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}

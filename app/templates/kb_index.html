@@ -1,8 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.kb-article-card { transition: transform .18s ease, box-shadow .18s ease; }
+.kb-article-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.13); }
+.kb-article-card h3 a { text-decoration: none; }
+.kb-article-card h3 a:hover { text-decoration: underline; }
+</style>
 <section class="card">
   <div class="detail-head">
-    <div><div class="eyebrow">Conhecimento</div><h1>Base de Conhecimento</h1>
+    <div><div class="eyebrow">BASE DE CONHECIMENTO</div><h1>Base de Conhecimento</h1>
     <div class="muted">Soluções documentadas pelos operadores.</div></div>
     {% if g.user and g.user.role in ('admin','operador') %}
     <div class="actions"><a class="btn" href="{{ url_for('kb.kb_new') }}">+ Novo artigo</a></div>
@@ -25,7 +31,7 @@
 {% endif %}
 
 {% for art in articles %}
-<section class="card" style="border-left:4px solid {{ art.categoria_cor or '#6366f1' }};">
+<section class="card kb-article-card" style="border-left:4px solid {{ art.categoria_cor or '#6366f1' }};">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
     <div style="flex:1;">
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
@@ -42,4 +48,12 @@
   </div>
 </section>
 {% endfor %}
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}

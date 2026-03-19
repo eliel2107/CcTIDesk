@@ -10,8 +10,8 @@
 <section class="card" style="max-width:900px;margin-bottom:14px;">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
     <div>
-      <div class="eyebrow">NF em edição</div>
-      <h2 style="margin:0;">{{ entrada.numero_nf }}{% if entrada.fornecedor %}<span class="muted" style="font-weight:400;font-size:14px;"> — {{ entrada.fornecedor }}</span>{% endif %}</h2>
+      <div class="eyebrow">NF EM EDIÇÃO · ITENS</div>
+      <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;">{{ entrada.numero_nf }}{% if entrada.fornecedor %}<span class="muted" style="font-weight:400;font-size:14px;font-family:inherit;"> — {{ entrada.fornecedor }}</span>{% endif %}</h2>
       {% if entrada.base_destino %}<div class="muted" style="font-size:13px;">📍 {{ entrada.base_destino }}</div>{% endif %}
     </div>
     <a class="btn ghost" href="{{ url_for('nf.nf_editar', eid=entrada.id) }}" style="font-size:12px;">Editar cabeçalho</a>
@@ -36,8 +36,8 @@
             <tr>
               <td><span class="pill {% if it.tipo_item in TIPOS_ATIVO %}pill-done{% else %}pill-info{% endif %}" style="font-size:10px;">{{ TIPO_LABEL.get(it.tipo_item, it.tipo_item) }}</span></td>
               <td style="font-weight:600;">{{ it.modelo }}</td>
-              <td style="font-family:monospace;font-weight:800;font-size:16px;text-align:center;">{{ it.quantidade }}</td>
-              <td style="font-family:monospace;color:var(--muted);font-size:12px;">
+              <td style="font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:16px;text-align:center;">{{ it.quantidade }}</td>
+              <td style="font-family:'IBM Plex Mono',monospace;color:var(--muted);font-size:12px;">
                 {% if it.prefixo_tag %}{{ it.prefixo_tag }}{% if it.quantidade > 1 %}-###{% endif %}{% else %}—{% endif %}
               </td>
               <td>
@@ -203,5 +203,13 @@ function updFields(){
   document.getElementById('fSerial').style.display   = isA ? '' : 'none';
   if(isA && PREF[tipo]) document.getElementById('prefixoAvulso').placeholder = PREF[tipo]+' (automático)';
 }
+</script>
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+})();
 </script>
 {% endblock %}

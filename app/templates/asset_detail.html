@@ -3,13 +3,23 @@
 <section class="card">
   <div class="detail-head">
     <div>
-      <div class="eyebrow">Ativo</div>
-      <h1>#{{ asset.id }} • {{ asset.tag }}</h1>
+      <div class="eyebrow" style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.35rem;">PATRIMÔNIO / ATIVO</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">#{{ asset.id }} • {{ asset.tag }}</h1>
       <div class="muted">Criado em {{ asset.criado_em }} • Atualizado em {{ asset.atualizado_em }}</div>
     </div>
     <div class="badges">
       <span class="pill">{{ asset.tipo }}</span>
-      <span class="pill">{{ asset.status }}</span>
+      {% if asset.status == "Em uso" %}
+        <span class="pill" style="background:rgba(34,197,94,.15);color:var(--ok);border-color:rgba(34,197,94,.3);">{{ asset.status }}</span>
+      {% elif asset.status == "Disponível" %}
+        <span class="pill" style="background:rgba(59,130,246,.15);color:#60a5fa;border-color:rgba(59,130,246,.3);">{{ asset.status }}</span>
+      {% elif asset.status == "Manutenção" %}
+        <span class="pill" style="background:rgba(251,191,36,.15);color:var(--warn);border-color:rgba(251,191,36,.3);">{{ asset.status }}</span>
+      {% elif asset.status == "Descartado" or asset.status == "Inativo" %}
+        <span class="pill" style="background:rgba(220,38,38,.12);color:var(--bad);border-color:rgba(220,38,38,.28);">{{ asset.status }}</span>
+      {% else %}
+        <span class="pill">{{ asset.status }}</span>
+      {% endif %}
       {% if g.user["role"] in ["admin", "operador"] %}
       <a class="btn secondary" href="{{ url_for('assets_admin.edit_asset', asset_id=asset.id) }}">Editar</a>
       {% endif %}
@@ -27,10 +37,11 @@
 <section class="layout-premium">
   <div class="main-pane">
     <section class="card">
-      <h2>Resumo do ativo</h2>
+      <h2 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Resumo do ativo</h2>
       <div class="summary-grid">
         <div class="summary-box"><span>Modelo</span><strong>{{ asset.modelo }}</strong></div>
-        <div class="summary-box"><span>Serial</span><strong>{{ asset.serial_number or "-" }}</strong></div>
+        <div class="summary-box"><span>Tag</span><strong style="font-family:'IBM Plex Mono',monospace;">{{ asset.tag }}</strong></div>
+        <div class="summary-box"><span>Serial</span><strong style="font-family:'IBM Plex Mono',monospace;">{{ asset.serial_number or "-" }}</strong></div>
         <div class="summary-box"><span>Base / Local</span><strong>{{ asset.local_base or "-" }}</strong></div>
         <div class="summary-box"><span>Responsável</span><strong>{{ asset.responsavel or "-" }}</strong></div>
       </div>
@@ -39,21 +50,21 @@
     </section>
 
     <section class="card">
-      <h2>Chamados vinculados</h2>
+      <h2 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Chamados vinculados</h2>
       <ul class="files">
         {% for t in tickets %}
-          <li><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">#{{ t.id }} • {{ t.titulo }}</a> <span class="muted">({{ t.status }} • {{ t.prioridade }})</span></li>
+          <li><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}" style="font-family:'IBM Plex Mono',monospace;">#{{ t.id }}</a> • {{ t.titulo }} <span class="muted">({{ t.status }} • {{ t.prioridade }})</span></li>
         {% endfor %}
         {% if tickets|length == 0 %}<li class="muted">Nenhum chamado vinculado.</li>{% endif %}
       </ul>
     </section>
 
     <section class="card">
-      <h2>Histórico do ativo</h2>
-      <ul class="timeline">
+      <h2 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Histórico do ativo</h2>
+      <ul class="timeline" id="asset-timeline">
         {% for h in history %}
           <li>
-            <div class="time">{{ h.criado_em }}</div>
+            <div class="time" style="font-family:'IBM Plex Mono',monospace;font-size:.78rem;">{{ h.criado_em }}</div>
             <div class="event"><strong>{{ h.evento }}</strong><div class="muted">{{ h.detalhe }}</div></div>
           </li>
         {% endfor %}
@@ -66,13 +77,35 @@
 
   <aside class="side-pane">
     <section class="card sticky-card">
-      <h2>QR rápido</h2>
+      <h2 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">QR rápido</h2>
       <div class="muted">Cole este QR no equipamento para abrir o cadastro rapidamente.</div>
       <div class="qr-box">
         <img alt="QR do ativo" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ url_for('assets_admin.asset_detail', asset_id=asset.id, _external=True) | urlencode }}">
       </div>
-      <div class="muted"><code>{{ url_for('assets_admin.asset_detail', asset_id=asset.id, _external=True) }}</code></div>
+      <div class="muted"><code style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;">{{ url_for('assets_admin.asset_detail', asset_id=asset.id, _external=True) }}</code></div>
     </section>
   </aside>
 </section>
+
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+
+  // Stagger timeline history items
+  var timelineItems = document.querySelectorAll('#asset-timeline li');
+  timelineItems.forEach(function(item, i){
+    item.style.opacity = '0';
+    item.style.transform = 'translateX(-12px)';
+    item.style.transition = 'opacity .35s ease, transform .35s ease';
+    item.style.transitionDelay = (0.25 + i * 0.08) + 's';
+    setTimeout(function(){
+      item.style.opacity = '1';
+      item.style.transform = 'translateX(0)';
+    }, 50);
+  });
+})();
+</script>
 {% endblock %}

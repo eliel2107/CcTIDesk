@@ -6,3 +6,4 @@ instance/
 .env
 .DEPLOY.md
 .claude/
+=0.49.0

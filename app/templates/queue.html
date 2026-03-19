@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.queue-ticket-id { font-family: 'IBM Plex Mono', monospace; font-size: .82rem; }
+.pill-priority-alta    { background: var(--bad,  #ef4444) !important; color: #fff !important; }
+.pill-priority-critica { background: #7f1d1d !important; color: #fca5a5 !important; }
+.pill-priority-media   { background: var(--warn, #f59e0b) !important; color: #000 !important; }
+.pill-priority-baixa   { background: var(--ok,   #22c55e) !important; color: #000 !important; }
+</style>
 <section class="card">
+  <div class="eyebrow">CENTRAL DE ATENDIMENTO</div>
   <h1>Fila de chamados</h1>
   <div class="muted">
     Chamados ativos aguardando triagem e tratamento. Chamados concluídos ou cancelados saem da fila automaticamente e ficam apenas no histórico.
@@ -55,7 +63,7 @@
         {% endif %}
         {% for t in tickets %}
           <tr class="{% if not t.assigned_user_id %}queue-row-unassigned{% endif %}">
-            <td><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">#{{ t.id }}</a></td>
+            <td><a class="queue-ticket-id" href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">#{{ t.id }}</a></td>
             <td>
               {{ t.titulo }}
               {% if not t.assigned_user_id %}<span class="badge-unassigned">Novo</span>{% endif %}
@@ -68,7 +76,7 @@
               {% endif %}
             </td>
             <td>{{ t.requester_name or t.solicitante or "–" }}</td>
-            <td><span class="pill">{{ t.prioridade }}</span></td>
+            <td><span class="pill pill-priority-{{ t.prioridade|lower }}">{{ t.prioridade }}</span></td>
             <td><span class="pill">{{ t.status }}</span></td>
             <td>
               {% if not t.assigned_user_id %}
@@ -94,4 +102,12 @@
     </table>
   </div>
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}

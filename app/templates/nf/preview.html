@@ -11,8 +11,8 @@
 <section class="card" style="max-width:900px;border-color:rgba(59,127,255,.25);">
   <div class="detail-head" style="margin-bottom:16px;">
     <div>
-      <div class="eyebrow">Revisão antes de confirmar</div>
-      <h1>NF {{ entrada.numero_nf }}</h1>
+      <div class="eyebrow">REVISÃO · CONFIRMAR NF</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;">NF {{ entrada.numero_nf }}</h1>
       <div class="badges" style="margin-top:6px;">
         {% if entrada.fornecedor %}<span class="pill">🏭 {{ entrada.fornecedor }}</span>{% endif %}
         {% if entrada.numero_oc  %}<span class="pill">📋 OC {{ entrada.numero_oc }}</span>{% endif %}
@@ -46,7 +46,7 @@
         <tbody>
           {% for row in ativos %}
           <tr>
-            <td style="font-family:monospace;color:var(--muted);font-size:11px;">{{ loop.index }}</td>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--muted);font-size:11px;">{{ loop.index }}</td>
             <td><span class="pill pill-done" style="font-size:10px;">{{ TIPO_LABEL.get(row.tipo_item, row.tipo_item) }}</span></td>
             <td style="font-weight:600;">{{ row.modelo }}</td>
             <td>
@@ -89,7 +89,7 @@
           <tr>
             <td style="font-weight:600;">{{ row.modelo }}</td>
             <td><span class="pill pill-info" style="font-size:10px;">{{ TIPO_LABEL.get(row.tipo_item, row.tipo_item) }}</span></td>
-            <td style="font-family:monospace;font-weight:800;color:var(--ok);">+{{ row.quantidade }}</td>
+            <td style="font-family:'IBM Plex Mono',monospace;font-weight:800;color:var(--ok);">+{{ row.quantidade }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -111,4 +111,18 @@
     </div>
   </form>
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+  document.querySelectorAll('td').forEach(function(td){
+    var txt = td.textContent.trim();
+    if(/^\+?\d+$/.test(txt) || /^\d{2}[-\/]/.test(txt)){
+      td.style.fontFamily="'IBM Plex Mono',monospace";
+    }
+  });
+})();
+</script>
 {% endblock %}

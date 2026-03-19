@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="card">
-  <h1>Categorias de chamado</h1>
+  <div class="eyebrow">Admin</div>
+  <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Categorias de chamado</h1>
   <div class="muted">Configure as categorias disponíveis para abertura de chamados, triagem automática e quais campos aparecem no formulário.</div>
 </section>
 
@@ -20,7 +21,7 @@
 ] %}
 
 <section class="card">
-  <h2>Nova categoria</h2>
+  <h2 style="font-family:'IBM Plex Mono',monospace;font-size:1rem;letter-spacing:-.01em;">Nova categoria</h2>
   <form method="post" action="{{ url_for('admin.create_category_route') }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid">
@@ -89,7 +90,7 @@
 </section>
 
 <section class="card">
-  <h2>Lista de categorias</h2>
+  <h2 style="font-family:'IBM Plex Mono',monospace;font-size:1rem;letter-spacing:-.01em;">Lista de categorias</h2>
   <div class="table-wrap">
     <table>
       <thead>
@@ -186,6 +187,14 @@
     💡 Após criar as categorias, acesse <a href="{{ url_for('admin.users') }}">Usuários</a> para definir quais categorias cada operador pode atender.
   </div>
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+})();
+</script>
 {% endblock %}
 
 {% block scripts %}

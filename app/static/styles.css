@@ -52,6 +52,17 @@
   --sh1: 0 2px 8px rgba(0,0,0,.28);
   --sh2: 0 8px 28px rgba(0,0,0,.36);
   --sh3: 0 18px 56px rgba(0,0,0,.48);
+
+  /* Tipografia */
+  --font-xs:   11px;
+  --font-sm:   13px;
+  --font-base: 14px;
+  --font-md:   16px;
+  --font-lg:   18px;
+  --font-xl:   21px;
+  --font-2xl:  28px;
+  --font-display: 'IBM Plex Mono', 'Cascadia Code', monospace;
+  --font-body:    'DM Sans', -apple-system, sans-serif;
 }
 
 /* ── Reset ───────────────────────────────────────────────────── */
@@ -60,7 +71,7 @@ html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: var(--fg);
@@ -152,13 +163,14 @@ pre  { padding: 14px; overflow: auto; font-size: .8rem; line-height: 1.6; }
 }
 
 .sidebar-brand .brand {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -.02em;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.01em;
   color: #fff;
   display: flex;
   align-items: center;
   gap: 9px;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .sidebar-brand .brand::before {
@@ -1220,3 +1232,64 @@ details summary::-webkit-details-marker { display: none; }
 .group-editor summary {
   cursor: pointer;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ANIMAÇÕES
+══════════════════════════════════════════════════════════════ */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes sla-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,74,74,.3); }
+  50%       { box-shadow: 0 0 0 8px rgba(255,74,74,0); }
+}
+
+/* Stagger nos cards de página */
+.page-content > .card,
+.page-content > section.card,
+.page-content > .chart-grid,
+.page-content > .layout-premium {
+  animation: fadeUp 0.4s ease both;
+}
+.page-content > :nth-child(2) { animation-delay: 0.06s; }
+.page-content > :nth-child(3) { animation-delay: 0.12s; }
+.page-content > :nth-child(4) { animation-delay: 0.18s; }
+.page-content > :nth-child(5) { animation-delay: 0.24s; }
+
+/* KPI cards stagger */
+.kpi-grid .kpi { animation: fadeUp 0.35s ease both; }
+.kpi-grid .kpi:nth-child(1) { animation-delay: 0.05s; }
+.kpi-grid .kpi:nth-child(2) { animation-delay: 0.10s; }
+.kpi-grid .kpi:nth-child(3) { animation-delay: 0.15s; }
+.kpi-grid .kpi:nth-child(4) { animation-delay: 0.20s; }
+.kpi-grid .kpi:nth-child(5) { animation-delay: 0.25s; }
+
+/* Ticket cards stagger */
+.ticket-grid .ticket-card { animation: fadeUp 0.35s ease both; }
+.ticket-grid .ticket-card:nth-child(1) { animation-delay: 0.04s; }
+.ticket-grid .ticket-card:nth-child(2) { animation-delay: 0.08s; }
+.ticket-grid .ticket-card:nth-child(3) { animation-delay: 0.12s; }
+.ticket-grid .ticket-card:nth-child(4) { animation-delay: 0.16s; }
+.ticket-grid .ticket-card:nth-child(5) { animation-delay: 0.20s; }
+.ticket-grid .ticket-card:nth-child(6) { animation-delay: 0.24s; }
+
+/* SLA crítico pulsante */
+.overdue { animation: sla-pulse 2s ease-in-out infinite; }
+
+/* Sidebar nav icon alignment */
+.nav-ico { display:flex; align-items:center; justify-content:center; width:20px; flex-shrink:0; }
+.nav-ico svg { display:block; }
+
+/* Brand usa fonte monoespaçada */
+.sidebar-brand .brand { font-family: var(--font-display); letter-spacing:-.01em; }
+
+/* Botão active state */
+.btn:active { transform: scale(0.97); }

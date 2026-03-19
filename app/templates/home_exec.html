@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.exec-value { font-family: 'IBM Plex Mono', monospace; font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
+.exec-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+.premium-alert-value { font-family: 'IBM Plex Mono', monospace; font-size: 2rem; font-weight: 700; }
+</style>
 <section class="hero-card">
   <div class="hero-copy">
-    <div class="eyebrow">Painel executivo</div>
+    <div class="eyebrow">PAINEL EXECUTIVO</div>
     <h1>Gestão rápida de chamados, envios e ativos</h1>
     <p class="muted">Visão central para acompanhar operação, localizar demandas críticas e agir com poucos cliques.</p>
     <div class="hero-actions">
@@ -66,4 +71,12 @@
     </div>
   </div>
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section, .quick-card, .hero-card, .exec-kpi, .premium-alert').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}

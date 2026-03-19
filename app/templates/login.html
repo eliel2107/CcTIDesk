@@ -1,31 +1,169 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="auth-wrap">
-  <div class="auth-card">
-
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;">
-      <div style="width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);flex-shrink:0;"></div>
-      <span style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;">CCTI Service Desk</span>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <h1 class="login-title">CcTI Desk</h1>
+      <p class="login-subtitle">Sistema de gestão de chamados</p>
     </div>
 
-    <h1>Bem‑vindo de volta</h1>
-    <p class="muted">Faça login para acessar o painel operacional.</p>
-
-    <form method="post" class="form" style="margin-top:4px;">
+    <form method="post" action="{{ url_for('auth.login') }}" class="login-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label>E-mail
-        <input type="email" name="email" placeholder="admin@empresa.com" required autocomplete="email">
-      </label>
-      <label>Senha
-        <input type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
-      </label>
-      <button class="btn" type="submit" style="margin-top:4px;">Entrar no sistema →</button>
+
+      <div class="login-field">
+        <label for="login-email">E-mail</label>
+        <input id="login-email" type="email" name="email" placeholder="admin@empresa.com" required autocomplete="email" autofocus>
+      </div>
+
+      <div class="login-field">
+        <label for="login-pass">Senha</label>
+        <input id="login-pass" type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn login-btn">Entrar</button>
     </form>
 
-    <div class="auth-help">
-      Primeiro acesso padrão:<br>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="login-alert login-alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="login-hint">
+      Primeiro acesso padrão:
       <code>admin@local</code> / <code>admin123</code>
     </div>
   </div>
-</section>
+</div>
+
+<style>
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background:
+    radial-gradient(ellipse 900px 500px at 20% 20%, rgba(30,70,160,.18), transparent),
+    radial-gradient(ellipse 600px 400px at 80% 80%, rgba(10,40,110,.14), transparent);
+}
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--s1, #09152a);
+  border: 1px solid var(--b2, rgba(255,255,255,.12));
+  border-radius: 16px;
+  padding: 40px 36px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.55);
+  animation: fadeUp .4s ease both;
+}
+.login-brand {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.login-logo {
+  width: 56px;
+  height: 56px;
+  background: var(--accent-soft, rgba(59,127,255,.1));
+  border: 1px solid rgba(59,127,255,.25);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+.login-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: #fff;
+  margin: 0 0 6px;
+}
+.login-subtitle {
+  color: var(--muted, #5a7299);
+  font-size: .82rem;
+  margin: 0;
+}
+.login-form { display: flex; flex-direction: column; gap: 16px; }
+.login-field { display: flex; flex-direction: column; gap: 6px; }
+.login-field label {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--fg2, #8da4c8);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.login-field input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--f-bg, #eef3fb);
+  border: 1px solid var(--f-bdr, #c4d4ea);
+  border-radius: 8px;
+  color: var(--f-txt, #0d1d38);
+  font-family: inherit;
+  font-size: .95rem;
+  transition: border-color .15s, box-shadow .15s;
+  box-sizing: border-box;
+}
+.login-field input:focus {
+  outline: none;
+  border-color: var(--accent, #3b7fff);
+  box-shadow: 0 0 0 3px rgba(59,127,255,.15);
+}
+.login-btn {
+  width: 100%;
+  padding: 11px;
+  font-size: .95rem;
+  font-weight: 700;
+  margin-top: 4px;
+  letter-spacing: .01em;
+}
+.login-alert {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: .85rem;
+  font-weight: 500;
+}
+.login-alert-error, .login-alert-danger {
+  background: rgba(255,74,74,.1);
+  border: 1px solid rgba(255,74,74,.3);
+  color: #ff8a8a;
+}
+.login-alert-success {
+  background: rgba(15,203,122,.1);
+  border: 1px solid rgba(15,203,122,.3);
+  color: #0fcb7a;
+}
+.login-alert-info, .login-alert-warning {
+  background: rgba(245,166,35,.1);
+  border: 1px solid rgba(245,166,35,.3);
+  color: #f5a623;
+}
+.login-hint {
+  margin-top: 20px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 8px;
+  font-size: .8rem;
+  color: var(--muted, #5a7299);
+  text-align: center;
+  line-height: 1.6;
+}
+.login-hint code {
+  background: rgba(255,255,255,.08);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .78rem;
+  color: var(--fg2, #8da4c8);
+}
+</style>
 {% endblock %}

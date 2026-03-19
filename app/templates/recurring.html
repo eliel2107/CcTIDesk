@@ -2,8 +2,11 @@
 {% block content %}
 <section class="card">
   <div class="detail-head">
-    <div><div class="eyebrow">Admin</div><h1>Chamados Recorrentes</h1>
-    <div class="muted">Chamados criados automaticamente conforme agendamento.</div></div>
+    <div>
+      <div class="eyebrow">ADMIN · AUTOMAÇÃO</div>
+      <h1>Chamados Recorrentes</h1>
+      <div class="muted">Chamados criados automaticamente conforme agendamento.</div>
+    </div>
   </div>
 </section>
 
@@ -81,5 +84,13 @@ function updateDiaLabel(sel) {
   else if (sel.value === 'diario') { label.style.display='none'; }
   else { label.firstChild.textContent = 'Dia do mês'; input.max=31; label.style.display=''; }
 }
+</script>
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
 </script>
 {% endblock %}

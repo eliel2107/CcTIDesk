@@ -1,26 +1,29 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <a href="{{ url_for('routes.requester_new_ticket') }}" class="btn secondary" style="padding:6px 12px;">← Categoria</a>
+<section class="card" style="animation:fadeUp .3s ease both;">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="{{ url_for('routes.requester_new_ticket') }}" class="btn secondary" style="padding:6px 14px;font-size:.82rem;">← Categoria</a>
     <div>
-      <h1 style="margin:0;">Abrir novo chamado</h1>
-      {% if selected_cat %}
-      <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-        <span style="width:10px;height:10px;border-radius:50%;background:{{ selected_cat.cor }};display:inline-block;"></span>
-        <span class="muted" style="font-size:.9rem;">{{ selected_cat.nome }}</span>
-      </div>
+      <div class="eyebrow">Novo chamado</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;margin:2px 0 0;">
+        {% if selected_cat %}{{ selected_cat.nome }}{% else %}Abrir chamado{% endif %}
+      </h1>
+      {% if selected_cat and selected_cat.descricao %}
+        <div class="muted" style="font-size:.85rem;margin-top:2px;">{{ selected_cat.descricao }}</div>
       {% else %}
-      <div class="muted">Preencha os dados básicos. O chamado irá para a fila de atendimento.</div>
+        <div class="muted" style="font-size:.85rem;margin-top:2px;">Preencha os dados básicos. O chamado irá para a fila de atendimento.</div>
       {% endif %}
     </div>
+    {% if selected_cat %}
+    <span style="width:10px;height:10px;border-radius:50%;background:{{ selected_cat.cor }};display:inline-block;margin-left:auto;flex-shrink:0;box-shadow:0 0 8px {{ selected_cat.cor }};"></span>
+    {% endif %}
   </div>
 </section>
 
 {% set campos = campos_visiveis or [] %}
 {% set show_all = campos | length == 0 %}
 
-<section class="card">
+<section class="card" style="animation:fadeUp .35s ease both;">
 <form method="post" action="{{ url_for('routes.requester_create_ticket') }}" class="form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% if selected_cat %}
@@ -90,8 +93,8 @@
 
     {% if show_all or 'entrega' in campos %}
     <div class="span-2">
-      <div class="divider">Dados de entrega</div>
-      <div class="grid" style="margin-top:10px;">
+      <div class="divider" style="margin:8px 0 16px;">Dados de entrega</div>
+      <div class="grid">
         <label>Destinatário
           <input name="destinatario" placeholder="Nome de quem vai receber">
         </label>

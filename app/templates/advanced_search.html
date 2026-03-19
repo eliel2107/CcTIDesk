@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="card">
-  <h1>🔎 Busca avançada</h1>
+  <div class="eyebrow">BUSCA</div>
+  <h1>Busca avançada</h1>
   <form method="get" action="{{ url_for('routes.advanced_search') }}" class="form">
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
       <label>Texto <input name="q" value="{{ filters.q }}" placeholder="título, solicitante, nº..."></label>
@@ -74,4 +75,12 @@
   {% endif %}
 </section>
 {% endif %}
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}

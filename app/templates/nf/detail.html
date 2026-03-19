@@ -3,8 +3,8 @@
 <section class="card">
   <div class="detail-head">
     <div>
-      <div class="eyebrow">Entrada por NF</div>
-      <h1>NF {{ entrada.numero_nf }}</h1>
+      <div class="eyebrow">ENTRADA POR NF</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;">NF {{ entrada.numero_nf }}</h1>
       <div class="badges" style="margin-top:8px;">
         {% if entrada.status == 'CONFIRMADA' %}
           <span class="pill pill-done">✓ Confirmada</span>
@@ -91,10 +91,10 @@
       <tbody>
         {% for row in ativos_gerados %}
         <tr>
-          <td style="font-family:monospace;font-weight:800;">{{ row.tag }}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:800;">{{ row.tag }}</td>
           <td><span class="pill" style="font-size:10px;">{{ row.tipo }}</span></td>
           <td style="font-weight:600;">{{ row.modelo }}</td>
-          <td style="font-size:12px;color:var(--muted);font-family:monospace;">{{ row.serial_number or '—' }}</td>
+          <td style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;">{{ row.serial_number or '—' }}</td>
           <td style="font-size:12px;color:var(--muted);">{{ row.local_base or '—' }}</td>
           <td><span class="pill pill-done" style="font-size:10px;">{{ row.asset_status or 'ESTOQUE' }}</span></td>
           <td>
@@ -121,7 +121,7 @@
         <tr>
           <td style="font-weight:600;">{{ item.modelo if item else '—' }}</td>
           <td><span class="pill pill-info" style="font-size:10px;">{{ TIPO_LABEL.get(item.tipo_item,'') if item else '' }}</span></td>
-          <td style="font-family:monospace;font-weight:800;color:var(--ok);">+{{ item.quantidade if item else '?' }}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:800;color:var(--ok);">+{{ item.quantidade if item else '?' }}</td>
           <td>
             <a href="{{ url_for('stock.produto_detail', pid=row.stock_produto_id) }}"
                class="mini" style="font-size:11px;">Ver estoque →</a>
@@ -141,4 +141,18 @@
   <a class="btn" href="{{ url_for('nf.nf_itens', eid=entrada.id) }}">Continuar →</a>
 </section>
 {% endif %}
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+  document.querySelectorAll('td').forEach(function(td){
+    var txt = td.textContent.trim();
+    if(/^\d{2}[-\/]\d{2}[-\/]\d{2}/.test(txt) || /^\d{2}:\d{2}/.test(txt)){
+      td.style.fontFamily="'IBM Plex Mono',monospace";
+    }
+  });
+})();
+</script>
 {% endblock %}

@@ -3,7 +3,8 @@
 <section class="card">
   <div class="detail-head">
     <div>
-      <h1>Ativos</h1>
+      <div class="eyebrow" style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.35rem;">PATRIMÔNIO</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Ativos</h1>
       <div class="muted">Gerencie equipamentos e vincule aos chamados.</div>
     </div>
     {% if g.user["role"] in ["admin", "operador"] %}
@@ -12,9 +13,9 @@
   </div>
 
   <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-title">Total</div><div class="kpi-value">{{ stats.total }}</div></div>
+    <div class="kpi"><div class="kpi-title">Total</div><div class="kpi-value" style="font-family:'IBM Plex Mono',monospace;">{{ stats.total }}</div></div>
     {% for k,v in stats.by_status.items() %}
-      <div class="kpi"><div class="kpi-title">{{ k }}</div><div class="kpi-value">{{ v }}</div></div>
+      <div class="kpi"><div class="kpi-title">{{ k }}</div><div class="kpi-value" style="font-family:'IBM Plex Mono',monospace;">{{ v }}</div></div>
     {% endfor %}
   </div>
 </section>
@@ -60,16 +61,26 @@
       <div class="ticket-card">
         <div class="ticket-header">
           <div>
-            <div class="ticket-id">#{{ a.id }} • {{ a.tag }}</div>
+            <div class="ticket-id" style="font-family:'IBM Plex Mono',monospace;">#{{ a.id }} • {{ a.tag }}</div>
             <div class="ticket-meta">
               <span class="pill">{{ a.tipo }}</span>
-              <span class="pill">{{ a.status }}</span>
+              {% if a.status == "Em uso" %}
+                <span class="pill" style="background:rgba(34,197,94,.15);color:var(--ok);border-color:rgba(34,197,94,.3);">{{ a.status }}</span>
+              {% elif a.status == "Disponível" %}
+                <span class="pill" style="background:rgba(59,130,246,.15);color:#60a5fa;border-color:rgba(59,130,246,.3);">{{ a.status }}</span>
+              {% elif a.status == "Manutenção" %}
+                <span class="pill" style="background:rgba(251,191,36,.15);color:var(--warn);border-color:rgba(251,191,36,.3);">{{ a.status }}</span>
+              {% elif a.status == "Descartado" or a.status == "Inativo" %}
+                <span class="pill" style="background:rgba(220,38,38,.12);color:var(--bad);border-color:rgba(220,38,38,.28);">{{ a.status }}</span>
+              {% else %}
+                <span class="pill">{{ a.status }}</span>
+              {% endif %}
             </div>
           </div>
         </div>
         <h3 class="ticket-title"><a href="{{ url_for('assets_admin.asset_detail', asset_id=a.id) }}">{{ a.modelo }}</a></h3>
         <div class="ticket-info">
-          <div>🏷 Serial: <strong>{{ a.serial_number or "-" }}</strong></div>
+          <div>🏷 Serial: <strong style="font-family:'IBM Plex Mono',monospace;">{{ a.serial_number or "-" }}</strong></div>
           <div class="muted">📍 {{ a.local_base or "-" }}</div>
           <div class="muted">👤 {{ a.responsavel or "-" }}</div>
           <div class="muted">Atualizado: {{ a.atualizado_em }}</div>
@@ -78,4 +89,13 @@
     {% endfor %}
   </div>
 </section>
+
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+})();
+</script>
 {% endblock %}

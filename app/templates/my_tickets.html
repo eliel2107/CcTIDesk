@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="card">
+  <div class="eyebrow">PORTAL DO SOLICITANTE</div>
   <h1>Meus chamados</h1>
   <div class="muted">Acompanhe o andamento de todas as suas solicitações.</div>
 </section>
@@ -54,5 +55,14 @@
 .pill-pending { background:#f59e0b !important; color:#000 !important; }
 .pill-done    { background:#22c55e !important; color:#000 !important; }
 .pill-info    { background:#f59e0b !important; color:#000 !important; }
+.ticket-id { font-family: 'IBM Plex Mono', monospace; }
 </style>
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}

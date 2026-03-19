@@ -3,23 +3,28 @@
 
 {% set tab = 'arquivados' if filters.show_archived == '1' else ('filtro' if filters.status else 'ativos') %}
 
-<section class="card">
+<section class="card" style="animation:fadeUp .3s ease both;">
   <div class="detail-head">
     <div>
-      <h1>Lista de chamados</h1>
-      <div class="muted">{% if user_role == "admin" %}Visão administrativa agrupada por categoria.{% elif user_role == "operador" %}Aqui aparecem apenas os chamados assumidos por você.{% else %}Visualização em cards com filtros operacionais.{% endif %}</div>
+      <div class="eyebrow">Operação</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Lista de chamados</h1>
+      <div class="muted">
+        {% if user_role == "admin" %}Visão administrativa agrupada por categoria.
+        {% elif user_role == "operador" %}Chamados assumidos por você.
+        {% else %}Chamados com filtros operacionais.{% endif %}
+      </div>
     </div>
     <div class="actions">
       <a class="btn ghost" href="{{ url_for('routes.executive_home') }}">Painel executivo</a>
-      <a class="btn ghost" href="{{ url_for('routes.kanban') }}">Ver Kanban</a>
+      <a class="btn ghost" href="{{ url_for('routes.kanban') }}">Kanban</a>
     </div>
   </div>
 
   <div class="tab-row">
-    <a class="tab-item {% if tab == 'ativos' %}tab-active{% endif %}" href="{{ url_for('routes.index') }}">🟢 Ativos</a>
-    <a class="tab-item {% if tab == 'arquivados' %}tab-active{% endif %}" href="{{ url_for('routes.index', show_archived='1') }}">📁 Arquivados</a>
+    <a class="tab-item {% if tab == 'ativos' %}tab-active{% endif %}" href="{{ url_for('routes.index') }}">Ativos</a>
+    <a class="tab-item {% if tab == 'arquivados' %}tab-active{% endif %}" href="{{ url_for('routes.index', show_archived='1') }}">Arquivados</a>
     <a class="tab-item {% if tab == 'filtro' %}tab-active{% endif %}" href="#"
-       onclick="var f=document.getElementById('adv-filters');f.style.display=f.style.display==='none'?'block':'none';return false;">🔍 Filtros avançados</a>
+       onclick="var f=document.getElementById('adv-filters');f.style.display=f.style.display==='none'?'block':'none';return false;">Filtros</a>
   </div>
 
   <form method="get" class="filters" id="adv-filters" style="{% if tab == 'filtro' %}display:block{% else %}display:none{% endif %}">
@@ -56,7 +61,7 @@
         </select>
       </label>
       <label class="span-2">Busca
-        <input name="q" value="{{ filters.q }}" placeholder="título, solicitante, fornecedor, rastreio, descrição...">
+        <input name="q" value="{{ filters.q }}" placeholder="título, solicitante, fornecedor, rastreio...">
       </label>
     </div>
     <div class="actions">
@@ -80,7 +85,7 @@
 
 {% if tab == 'arquivados' %}
 <div class="archive-banner">
-  📁 Exibindo chamados <strong>concluídos e cancelados</strong>.
+  Exibindo chamados <strong>concluídos e cancelados</strong>.
   <a href="{{ url_for('routes.index') }}">← Voltar para ativos</a>
 </div>
 {% endif %}
@@ -88,7 +93,7 @@
 <section class="layout-premium">
   <div class="main-pane">
     {% if tickets|length == 0 %}
-      <div class="card muted" style="padding:24px 16px;">
+      <div class="card muted" style="padding:28px 20px;text-align:center;">
         {% if tab == 'arquivados' %}Nenhum chamado arquivado.
         {% elif tab == 'filtro' %}Nenhum chamado encontrado com esses filtros.
         {% elif user_role == 'operador' %}Você ainda não assumiu chamados nessa aba.
@@ -99,7 +104,11 @@
     {% if user_role == 'admin' and grouped_tickets %}
       {% for group in grouped_tickets %}
       <section class="category-block">
-        <div class="category-block-head">📂 {{ group.categoria }} <span class="muted">({{ group.tickets|length }})</span></div>
+        <div class="category-block-head">
+          <span style="color:var(--accent);margin-right:6px;">▸</span>
+          {{ group.categoria }}
+          <span class="muted" style="font-weight:400;font-size:.85rem;"> ({{ group.tickets|length }})</span>
+        </div>
         <div class="ticket-grid grouped-ticket-grid">
           {% for t in group.tickets %}
             {% set is_overdue = (t.data_limite and t.data_limite < stats_today and t.status not in ['CONCLUIDO','CANCELADO']) %}
@@ -110,22 +119,22 @@
             <div class="ticket-card premium-ticket {% if is_overdue %}overdue{% endif %} {% if is_archived %}ticket-archived{% endif %} {% if is_info %}ticket-needs-info{% endif %}">
               <div class="ticket-header">
                 <div class="ticket-left">
-                  <div class="ticket-id">#{{ t.id }}</div>
+                  <div class="ticket-id" style="font-family:'IBM Plex Mono',monospace;">#{{ t.id }}</div>
                   <div class="ticket-meta">
                     <span class="pill {% if is_info %}pill-info{% elif is_archived %}pill-archived{% endif %}">{{ t.status.replace('_',' ') }}</span>
                     <span class="pill {{ prio_class }}">{{ t.prioridade }}</span>
                   </div>
                 </div>
                 <div class="ticket-right">
-                  {% if t.data_limite %}<div class="due {% if is_overdue %}due-overdue{% endif %}">{% if is_overdue %}⚠{% else %}⏰{% endif %} {{ t.data_limite }}</div>{% endif %}
+                  {% if t.data_limite %}<div class="due {% if is_overdue %}due-overdue{% endif %}">{% if is_overdue %}⚠{% else %}⏱{% endif %} {{ t.data_limite }}</div>{% endif %}
                 </div>
               </div>
               <h3 class="ticket-title"><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.titulo }}</a></h3>
-              {% if is_info %}<div class="info-badge">⚠️ Aguardando complemento do solicitante</div>{% endif %}
+              {% if is_info %}<div class="info-badge">Aguardando complemento do solicitante</div>{% endif %}
               <div class="ticket-info">
-                <div>👤 <strong>{{ t.responsavel or "Sem responsável" }}</strong></div>
-                <div class="muted">Solicitante: {{ t.solicitante or "-" }}</div>
-                <div class="muted">Atualizado: {{ t.atualizado_em[:16] }}</div>
+                <div><strong>{{ t.responsavel or "Sem responsável" }}</strong></div>
+                <div class="muted">{{ t.solicitante or "—" }}</div>
+                <div class="muted">{{ t.atualizado_em[:16] }}</div>
               </div>
               <div class="ticket-actions"><a class="btn secondary" href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">Abrir</a></div>
             </div>
@@ -144,22 +153,22 @@
           <div class="ticket-card premium-ticket {% if is_overdue %}overdue{% endif %} {% if is_archived %}ticket-archived{% endif %} {% if is_info %}ticket-needs-info{% endif %}">
             <div class="ticket-header">
               <div class="ticket-left">
-                <div class="ticket-id">#{{ t.id }}</div>
+                <div class="ticket-id" style="font-family:'IBM Plex Mono',monospace;">#{{ t.id }}</div>
                 <div class="ticket-meta">
                   <span class="pill {% if is_info %}pill-info{% elif is_archived %}pill-archived{% endif %}">{{ t.status.replace('_',' ') }}</span>
                   <span class="pill {{ prio_class }}">{{ t.prioridade }}</span>
                 </div>
               </div>
               <div class="ticket-right">
-                {% if t.data_limite %}<div class="due {% if is_overdue %}due-overdue{% endif %}">{% if is_overdue %}⚠{% else %}⏰{% endif %} {{ t.data_limite }}</div>{% endif %}
+                {% if t.data_limite %}<div class="due {% if is_overdue %}due-overdue{% endif %}">{% if is_overdue %}⚠{% else %}⏱{% endif %} {{ t.data_limite }}</div>{% endif %}
               </div>
             </div>
             <h3 class="ticket-title"><a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.titulo }}</a></h3>
-            {% if is_info %}<div class="info-badge">⚠️ Aguardando complemento do solicitante</div>{% endif %}
+            {% if is_info %}<div class="info-badge">Aguardando complemento</div>{% endif %}
             <div class="ticket-info">
-              <div>👤 <strong>{{ t.responsavel or "Sem responsável" }}</strong></div>
-              <div class="muted">Solicitante: {{ t.solicitante or "-" }}</div>
-              <div class="muted">Atualizado: {{ t.atualizado_em[:16] }}</div>
+              <div><strong>{{ t.responsavel or "Sem responsável" }}</strong></div>
+              <div class="muted">{{ t.solicitante or "—" }}</div>
+              <div class="muted">{{ t.atualizado_em[:16] }}</div>
             </div>
             <div class="ticket-actions"><a class="btn secondary" href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">Abrir</a></div>
           </div>
@@ -170,15 +179,15 @@
 
   <aside class="side-pane">
     <section class="card sticky-card">
-      <h2>Leitura rápida</h2>
+      <h2>Resumo</h2>
       <div class="summary-list">
-        <div class="summary-item"><span>Página</span><strong>{{ page }} / {{ total_pages }}</strong></div>
-        <div class="summary-item"><span>Total</span><strong>{{ total }}</strong></div>
-        <div class="summary-item"><span>Urgentes</span><strong>{{ tickets|selectattr('prioridade','equalto','URGENTE')|list|length }}</strong></div>
-        <div class="summary-item"><span>Exibindo</span><strong>{{ tickets|length }}</strong></div>
+        <div class="summary-item"><span>Página</span><strong style="font-family:'IBM Plex Mono',monospace;">{{ page }} / {{ total_pages }}</strong></div>
+        <div class="summary-item"><span>Total</span><strong style="font-family:'IBM Plex Mono',monospace;">{{ total }}</strong></div>
+        <div class="summary-item"><span>Urgentes</span><strong style="color:var(--warn);font-family:'IBM Plex Mono',monospace;">{{ tickets|selectattr('prioridade','equalto','URGENTE')|list|length }}</strong></div>
+        <div class="summary-item"><span>Exibindo</span><strong style="font-family:'IBM Plex Mono',monospace;">{{ tickets|length }}</strong></div>
       </div>
       {% if tab == 'ativos' %}
-      <div class="muted" style="margin-top:10px;font-size:.82rem;">Chamados encerrados ficam em <strong>📁 Arquivados</strong>.</div>
+      <div class="muted" style="margin-top:12px;font-size:.8rem;line-height:1.5;">Chamados encerrados ficam em <strong>Arquivados</strong>.</div>
       {% endif %}
     </section>
   </aside>
@@ -189,44 +198,49 @@
   <div class="pagination">
     {% set qs = filters.items()|list %}
     {% if page > 1 %}<a class="btn secondary pag-btn" href="?page={{ page-1 }}{% for k,v in qs %}&{{ k }}={{ v }}{% endfor %}">← Anterior</a>
-    {% else %}<span class="btn secondary pag-btn" style="opacity:.4;cursor:default;">← Anterior</span>{% endif %}
+    {% else %}<span class="btn secondary pag-btn" style="opacity:.35;cursor:default;">← Anterior</span>{% endif %}
     {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
       {% if p == page %}<span class="btn pag-btn pag-active">{{ p }}</span>
       {% else %}<a class="btn secondary pag-btn" href="?page={{ p }}{% for k,v in qs %}&{{ k }}={{ v }}{% endfor %}">{{ p }}</a>{% endif %}
     {% endfor %}
     {% if page < total_pages %}<a class="btn secondary pag-btn" href="?page={{ page+1 }}{% for k,v in qs %}&{{ k }}={{ v }}{% endfor %}">Próxima →</a>
-    {% else %}<span class="btn secondary pag-btn" style="opacity:.4;cursor:default;">Próxima →</span>{% endif %}
+    {% else %}<span class="btn secondary pag-btn" style="opacity:.35;cursor:default;">Próxima →</span>{% endif %}
     <span class="pag-info">{{ total }} chamados</span>
   </div>
 </section>
 {% endif %}
 
 <style>
-.tab-row { display:flex; gap:4px; margin:14px 0 4px; border-bottom:2px solid var(--border); }
-.tab-item { padding:8px 16px; border-radius:8px 8px 0 0; font-size:.88rem; font-weight:600;
-  text-decoration:none; color:var(--muted); cursor:pointer; border:2px solid transparent;
-  border-bottom:none; margin-bottom:-2px; transition:all .15s; }
-.tab-item:hover { color:var(--fg); background:rgba(99,102,241,.07); }
-.tab-active { color:var(--accent,#6366f1) !important; border-color:var(--border);
-  border-bottom-color:var(--surface,#fff); background:var(--surface,#fff); }
-.archive-banner { background:rgba(99,102,241,.08); border-left:4px solid var(--accent,#6366f1);
-  border-radius:8px; padding:10px 16px; margin-bottom:10px; font-size:.88rem; }
-.archive-banner a { color:var(--accent,#6366f1); font-weight:600; }
-.ticket-archived { opacity:.72; }
-.pill-archived { background:#6b7280 !important; color:#fff !important; }
-.ticket-needs-info { border-left:3px solid #f59e0b !important; }
-.pill-info { background:#f59e0b !important; color:#000 !important; }
-.info-badge { font-size:.78rem; font-weight:600; color:#92400e;
-  background:rgba(245,158,11,.12); border-radius:6px; padding:3px 8px;
-  margin-bottom:6px; display:inline-block; }
-.chip-clear { background:rgba(239,68,68,.08); color:#ef4444;
-  border:1px solid rgba(239,68,68,.2); text-decoration:none; }
-.category-block { margin-bottom:22px; }
-.category-block-head { font-weight:800; margin:6px 0 12px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,.03); }
+.tab-row { display:flex; gap:4px; margin:16px 0 4px; border-bottom:1px solid var(--b1); }
+.tab-item { padding:8px 16px; border-radius:8px 8px 0 0; font-size:.85rem; font-weight:600;
+  text-decoration:none; color:var(--muted); cursor:pointer; border:1px solid transparent;
+  border-bottom:none; margin-bottom:-1px; transition:all .15s; }
+.tab-item:hover { color:var(--fg); background:var(--accent-soft); }
+.tab-active { color:var(--accent-h) !important; border-color:var(--b2);
+  border-bottom-color:var(--s2); background:var(--s2); }
+.archive-banner { background:var(--accent-soft); border-left:3px solid var(--accent);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin-bottom:12px; font-size:.88rem; }
+.archive-banner a { color:var(--accent-h); font-weight:600; }
+.ticket-archived { opacity:.7; }
+.pill-archived { background:rgba(107,114,128,.3) !important; color:var(--fg2) !important; }
+.ticket-needs-info { border-left:3px solid var(--warn) !important; }
+.pill-info { background:rgba(245,158,11,.2) !important; color:var(--warn) !important; border:1px solid rgba(245,158,11,.3) !important; }
+.info-badge { font-size:.76rem; font-weight:600; color:var(--warn);
+  background:rgba(245,158,11,.08); border-radius:4px; padding:2px 8px;
+  margin-bottom:6px; display:inline-block; border:1px solid rgba(245,158,11,.2); }
+.chip-clear { background:rgba(255,74,74,.08); color:var(--bad);
+  border:1px solid rgba(255,74,74,.2); text-decoration:none; }
+.category-block { margin-bottom:24px; }
+.category-block-head { font-weight:700; margin:6px 0 12px; padding:8px 14px;
+  border:1px solid var(--b1); border-radius:8px; background:rgba(255,255,255,.02);
+  font-size:.9rem; display:flex; align-items:center; }
 .grouped-ticket-grid { margin-bottom:0; }
 </style>
 
 <script>
+document.querySelectorAll('.ticket-grid .ticket-card').forEach(function(c, i){
+  c.style.animationDelay = (i * 0.045) + 's';
+});
 document.addEventListener('DOMContentLoaded', function() {
   const hasFilters = {{ 'true' if (filters.status or filters.tipo or filters.prioridade or filters.responsavel or filters.q) else 'false' }};
   if (hasFilters) document.getElementById('adv-filters').style.display = 'block';

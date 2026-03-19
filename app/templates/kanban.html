@@ -1,8 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.kanban-col-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem;
+  font-weight: 700;
+  background: var(--accent-soft, rgba(99,102,241,.15));
+  color: var(--accent, #6366f1);
+  border-radius: 99px;
+  padding: 2px 9px;
+  min-width: 26px;
+  text-align: center;
+}
+.kb-id { font-family: 'IBM Plex Mono', monospace; font-size: .75rem; }
+.kanban-col-title { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: .78rem; }
+</style>
 <section class="card">
   <div class="kanban-head">
     <div>
+      <div class="eyebrow">GESTÃO VISUAL</div>
       <h1>Kanban</h1>
       <div class="muted">Arraste os cards entre colunas para mudar o status.</div>
     </div>
@@ -142,5 +158,13 @@
       dragged.dataset.status = oldStatus;
     }
   });
+</script>
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
 </script>
 {% endblock %}

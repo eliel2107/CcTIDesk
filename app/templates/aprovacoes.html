@@ -2,7 +2,7 @@
 {% block content %}
 <section class="card">
   <div class="detail-head">
-    <div><div class="eyebrow">Admin</div><h1>Aprovações pendentes</h1>
+    <div><div class="eyebrow">Admin</div><h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Aprovações pendentes</h1>
     <div class="muted">{{ tickets|length }} chamado(s) aguardando sua aprovação.</div></div>
   </div>
 </section>
@@ -20,7 +20,7 @@
         <span class="pill">{{ t.prioridade }}</span>
         {% if t.categoria_nome %}<span class="pill" style="background:{{ t.categoria_cor }};color:#fff;">{{ t.categoria_nome }}</span>{% endif %}
       </div>
-      <h3 style="margin:0 0 4px;">
+      <h3 style="margin:0 0 4px;font-family:'IBM Plex Mono',monospace;letter-spacing:-.01em;">
         <a href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">{{ t.numero_chamado or ('#' + t.id|string) }} — {{ t.titulo }}</a>
       </h3>
       <div class="muted" style="font-size:.85rem;">
@@ -43,4 +43,13 @@
   </div>
 </section>
 {% endfor %}
+
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+})();
+</script>
 {% endblock %}

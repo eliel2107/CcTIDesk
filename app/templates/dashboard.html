@@ -1,59 +1,66 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card">
+
+{# ── Cabeçalho ── #}
+<section class="card" style="animation:fadeUp .3s ease both;">
   <div class="detail-head">
     <div>
       <div class="eyebrow">Visão geral</div>
-      <h1>Dashboard</h1>
-      <div class="muted">Hoje: <strong>{{ stats.today }}</strong> &nbsp;•&nbsp; Total de chamados: <strong>{{ stats.total }}</strong></div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Dashboard</h1>
+      <div class="muted">
+        Hoje: <strong style="color:var(--fg);">{{ stats.today }}</strong>
+        &nbsp;•&nbsp;
+        Total: <strong style="color:var(--fg);">{{ stats.total }}</strong> chamados
+      </div>
     </div>
     {% if user_role == 'operador' %}
-    <div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;padding:10px 16px;text-align:center;font-size:.85rem;">
-      <div style="font-size:1.1rem;margin-bottom:2px;">👤</div>
-      <div style="font-weight:700;">Meus chamados</div>
-      <div class="muted" style="font-size:.8rem;">{{ user_nome }}</div>
+    <div style="background:var(--accent-soft);border:1px solid rgba(59,127,255,.3);border-radius:10px;padding:12px 18px;text-align:center;">
+      <div style="font-size:1.4rem;margin-bottom:4px;">👤</div>
+      <div style="font-weight:700;font-size:.9rem;">{{ user_nome }}</div>
+      <div class="muted" style="font-size:.75rem;">operador</div>
     </div>
     {% endif %}
   </div>
 
-  <div class="kpi-grid" style="margin-top:16px;">
-    {% set tma = namespace(val=None) %}
-    <div class="kpi kpi-open">
-      <div class="kpi-title">Em aberto</div>
-      <div class="kpi-value">{{ stats.open_count }}</div>
-      <div class="muted">chamados ativos</div>
-    </div>
-    <div class="kpi kpi-done">
-      <div class="kpi-title">Concluídos (30d)</div>
-      <div class="kpi-value">{{ stats.concluded_30d }}</div>
-      <div class="muted">últimos 30 dias</div>
-    </div>
-    <div class="kpi kpi-overdue">
-      <div class="kpi-title">Atrasados</div>
-      <div class="kpi-value">{{ stats.overdue|length }}</div>
-      <div class="muted">com prazo vencido</div>
-    </div>
-    <div class="kpi kpi-urgent">
-      <div class="kpi-title">Urgentes</div>
-      <div class="kpi-value">{{ stats.by_prioridade.get('URGENTE', 0) }}</div>
-      <div class="muted">prioridade máxima</div>
-    </div>
-    <div class="kpi" style="border-top:3px solid #6366f1;">
-      <div class="kpi-title">TMA médio</div>
-      <div class="kpi-value" id="tma-val">—</div>
-      <div class="muted">tempo médio de atendimento</div>
-    </div>
-  </div>
   {% if g.user and g.user.role == 'admin' %}
     {% set aprovacoes_pendentes = stats.by_status.get('AGUARDANDO_APROVACAO', 0) %}
     {% if aprovacoes_pendentes > 0 %}
-    <div style="background:rgba(245,158,11,.1);border-left:4px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-top:14px;display:flex;align-items:center;justify-content:space-between;">
-      <span>⚠️ <strong>{{ aprovacoes_pendentes }}</strong> chamado(s) aguardando aprovação</span>
-      <a href="{{ url_for('routes.aprovacoes') }}" class="btn" style="font-size:.8rem;padding:4px 12px;">Ver aprovações →</a>
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(245,158,11,.08);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:10px 16px;margin-top:16px;">
+      <span style="font-size:.9rem;">⚠️ <strong>{{ aprovacoes_pendentes }}</strong> chamado(s) aguardando aprovação</span>
+      <a href="{{ url_for('routes.aprovacoes') }}" class="btn" style="font-size:.78rem;padding:4px 12px;">Ver →</a>
     </div>
     {% endif %}
   {% endif %}
 </section>
+
+{# ── KPIs ── #}
+<div class="kpi-grid">
+  <div class="kpi" style="border-top:3px solid var(--accent);">
+    <div class="kpi-title">Em aberto</div>
+    <div class="kpi-value" style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;color:var(--accent);">{{ stats.open_count }}</div>
+    <div class="muted" style="font-size:.8rem;">chamados ativos</div>
+  </div>
+  <div class="kpi" style="border-top:3px solid var(--ok);">
+    <div class="kpi-title">Concluídos (30d)</div>
+    <div class="kpi-value" style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;color:var(--ok);">{{ stats.concluded_30d }}</div>
+    <div class="muted" style="font-size:.8rem;">últimos 30 dias</div>
+  </div>
+  <div class="kpi" style="border-top:3px solid var(--bad);">
+    <div class="kpi-title">Atrasados</div>
+    <div class="kpi-value" style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;color:var(--bad);">{{ stats.overdue|length }}</div>
+    <div class="muted" style="font-size:.8rem;">prazo vencido</div>
+  </div>
+  <div class="kpi" style="border-top:3px solid var(--warn);">
+    <div class="kpi-title">Urgentes</div>
+    <div class="kpi-value" style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;color:var(--warn);">{{ stats.by_prioridade.get('URGENTE', 0) }}</div>
+    <div class="muted" style="font-size:.8rem;">prioridade máxima</div>
+  </div>
+  <div class="kpi" style="border-top:3px solid #8b5cf6;">
+    <div class="kpi-title">TMA médio</div>
+    <div class="kpi-value" id="tma-val" style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;color:#8b5cf6;">—</div>
+    <div class="muted" style="font-size:.8rem;">tempo de atendimento</div>
+  </div>
+</div>
 
 {# ── Gráficos linha 1 ── #}
 <div class="chart-grid">
@@ -82,28 +89,39 @@
 {# ── Tabela de atrasados ── #}
 <section class="card">
   <div class="detail-head">
-    <h2>⚠️ Chamados atrasados</h2>
+    <div>
+      <div class="eyebrow">SLA</div>
+      <h2 style="margin:0;">Chamados atrasados</h2>
+    </div>
     {% if stats.overdue|length > 0 %}
-      <span class="badge-unassigned">{{ stats.overdue|length }} atrasado(s)</span>
+      <span style="background:rgba(255,74,74,.12);color:var(--bad);border:1px solid rgba(255,74,74,.3);border-radius:20px;padding:3px 12px;font-size:.8rem;font-weight:700;">{{ stats.overdue|length }} atrasado(s)</span>
     {% endif %}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>ID</th><th>Título</th><th>Status</th><th>Prioridade</th><th>Responsável</th><th>Data limite</th><th>Atraso</th></tr></thead>
+      <thead>
+        <tr>
+          <th>ID</th><th>Título</th><th>Status</th><th>Prioridade</th>
+          <th>Responsável</th><th>Data limite</th><th>Atraso</th>
+        </tr>
+      </thead>
       <tbody>
         {% if stats.overdue|length == 0 %}
-          <tr><td colspan="8" class="muted" style="text-align:center;padding:24px;">Nenhum chamado atrasado 🎉</td></tr>
+          <tr><td colspan="7" class="muted" style="text-align:center;padding:28px;">Nenhum chamado atrasado 🎉</td></tr>
         {% endif %}
         {% for r in stats.overdue %}
-          <tr>
-            <td><a href="{{ url_for('routes.ticket_detail', ticket_id=r.id) }}">#{{ r.id }}</a></td>
-            
+          <tr class="overdue-row">
+            <td><a href="{{ url_for('routes.ticket_detail', ticket_id=r.id) }}" style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;">#{{ r.id }}</a></td>
             <td class="title-col"><a href="{{ url_for('routes.ticket_detail', ticket_id=r.id) }}">{{ r.titulo }}</a></td>
             <td><span class="pill">{{ r.status }}</span></td>
             <td><span class="pill">{{ r.prioridade }}</span></td>
-            <td>{{ r.responsavel or "-" }}</td>
+            <td>{{ r.responsavel or "—" }}</td>
             <td><strong>{{ r.data_limite }}</strong></td>
-            <td>{% if r.days_late is not none %}<span style="color:#ff7a7a;font-weight:800;">+{{ r.days_late }}d</span>{% else %}-{% endif %}</td>
+            <td>
+              {% if r.days_late is not none %}
+                <span style="color:var(--bad);font-weight:800;font-family:'IBM Plex Mono',monospace;">+{{ r.days_late }}d</span>
+              {% else %}—{% endif %}
+            </td>
           </tr>
         {% endfor %}
       </tbody>
@@ -111,21 +129,26 @@
   </div>
 </section>
 
+<style>
+.overdue-row td { background: rgba(255,74,74,.03); }
+.overdue-row:hover td { background: rgba(255,74,74,.07) !important; }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316'];
-const GRID_COLOR  = 'rgba(141,180,255,0.08)';
-const TICK_COLOR  = '#7a90b8';
-const TEXT_COLOR  = '#e7eefc';
+const PALETTE   = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316'];
+const GRID_COLOR = 'rgba(141,180,255,0.06)';
+const TICK_COLOR = '#5a7299';
+const TEXT_COLOR = '#8da4c8';
 
 Chart.defaults.color = TICK_COLOR;
-Chart.defaults.font.family = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
+Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
 
 function baseOptions(extra) {
   return {
     responsive: true,
     maintainAspectRatio: true,
-    plugins: { legend: { labels: { color: TEXT_COLOR, boxWidth: 14, padding: 14 } }, ...extra },
+    plugins: { legend: { labels: { color: TEXT_COLOR, boxWidth: 12, padding: 12 } }, ...extra },
   };
 }
 
@@ -138,72 +161,46 @@ function gridOpts() {
   };
 }
 
-// Status bar chart
 new Chart(document.getElementById("statusChart"), {
   type: "bar",
   data: {
     labels: {{ stats.by_status.keys()|list|tojson }},
-    datasets: [{
-      label: "Chamados",
-      data: {{ stats.by_status.values()|list|tojson }},
-      backgroundColor: PALETTE,
-      borderRadius: 8,
-      borderSkipped: false,
-    }]
+    datasets: [{ label: "Chamados", data: {{ stats.by_status.values()|list|tojson }},
+      backgroundColor: PALETTE, borderRadius: 6, borderSkipped: false }]
   },
   options: { ...baseOptions({ legend: { display: false } }), ...gridOpts() },
 });
 
-// Priority doughnut
 new Chart(document.getElementById("priorityChart"), {
   type: "doughnut",
   data: {
     labels: {{ stats.by_prioridade.keys()|list|tojson }},
-    datasets: [{
-      data: {{ stats.by_prioridade.values()|list|tojson }},
+    datasets: [{ data: {{ stats.by_prioridade.values()|list|tojson }},
       backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'],
-      borderWidth: 2,
-      borderColor: '#111b2e',
-      hoverOffset: 8,
-    }]
+      borderWidth: 2, borderColor: '#060e1c', hoverOffset: 6 }]
   },
-  options: {
-    ...baseOptions({}),
-    cutout: '65%',
-    plugins: {
-      legend: { position: 'right', labels: { color: TEXT_COLOR, padding: 14, boxWidth: 14 } }
-    }
+  options: { ...baseOptions({}), cutout: '68%',
+    plugins: { legend: { position: 'right', labels: { color: TEXT_COLOR, padding: 12, boxWidth: 12 } } }
   },
 });
 
-// Aging bar chart
 new Chart(document.getElementById("agingChart"), {
   type: "bar",
   data: {
     labels: {{ stats.aging_buckets.keys()|list|tojson }},
-    datasets: [{
-      label: "Chamados",
-      data: {{ stats.aging_buckets.values()|list|tojson }},
+    datasets: [{ label: "Chamados", data: {{ stats.aging_buckets.values()|list|tojson }},
       backgroundColor: ['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444'],
-      borderRadius: 8,
-      borderSkipped: false,
-    }]
+      borderRadius: 6, borderSkipped: false }]
   },
   options: { ...baseOptions({ legend: { display: false } }), ...gridOpts() },
 });
 
-// Top owners horizontal bar
 new Chart(document.getElementById("ownersChart"), {
   type: "bar",
   data: {
     labels: {{ stats.top_responsaveis|map(attribute='resp')|list|tojson }},
-    datasets: [{
-      label: "Em aberto",
-      data: {{ stats.top_responsaveis|map(attribute='total')|list|tojson }},
-      backgroundColor: '#3b82f6',
-      borderRadius: 6,
-      borderSkipped: false,
-    }]
+    datasets: [{ label: "Em aberto", data: {{ stats.top_responsaveis|map(attribute='total')|list|tojson }},
+      backgroundColor: 'rgba(59,127,255,.75)', borderRadius: 6, borderSkipped: false }]
   },
   options: {
     ...baseOptions({ legend: { display: false } }),
@@ -215,7 +212,6 @@ new Chart(document.getElementById("ownersChart"), {
   },
 });
 
-// TMA
 fetch('/api/tma').then(r=>r.json()).then(d=>{
   const el = document.getElementById('tma-val');
   if (!el) return;

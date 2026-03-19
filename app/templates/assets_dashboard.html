@@ -3,7 +3,8 @@
 <section class="card">
   <div class="detail-head">
     <div>
-      <h1>Dashboard de Ativos</h1>
+      <div class="eyebrow" style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.35rem;">PATRIMÔNIO / VISÃO GERAL</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Dashboard de Ativos</h1>
       <div class="muted">Visão consolidada do parque de ativos cadastrado.</div>
     </div>
   </div>
@@ -27,12 +28,12 @@
   <div class="kpi-grid">
     <div class="kpi">
       <div class="kpi-title">Total de ativos</div>
-      <div class="kpi-value">{{ stats.total }}</div>
+      <div class="kpi-value" style="font-family:'IBM Plex Mono',monospace;">{{ stats.total }}</div>
     </div>
     {% for k,v in stats.by_status.items() %}
       <div class="kpi">
         <div class="kpi-title">{{ k }}</div>
-        <div class="kpi-value">{{ v }}</div>
+        <div class="kpi-value" style="font-family:'IBM Plex Mono',monospace;">{{ v }}</div>
       </div>
     {% endfor %}
   </div>
@@ -40,26 +41,26 @@
 
 <section class="chart-grid">
   <div class="card">
-    <h2>Ativos por status</h2>
+    <h2 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Ativos por status</h2>
     <canvas id="assetStatusChart" height="120"></canvas>
   </div>
   <div class="card">
-    <h2>Ativos por tipo</h2>
+    <h2 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Ativos por tipo</h2>
     <canvas id="assetTypeChart" height="120"></canvas>
   </div>
 </section>
 
 <section class="card">
-  <h2>Resumo por tipo</h2>
+  <h2 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Resumo por tipo</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Tipo</th><th>Quantidade</th></tr></thead>
+      <thead><tr><th>Tipo</th><th style="font-family:'IBM Plex Mono',monospace;">Quantidade</th></tr></thead>
       <tbody>
         {% if stats.by_tipo|length == 0 %}
           <tr><td colspan="2" class="muted">Nenhum ativo cadastrado.</td></tr>
         {% endif %}
         {% for k,v in stats.by_tipo.items() %}
-          <tr><td>{{ k }}</td><td><strong>{{ v }}</strong></td></tr>
+          <tr><td>{{ k }}</td><td><strong style="font-family:'IBM Plex Mono',monospace;">{{ v }}</strong></td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -85,5 +86,14 @@ new Chart(document.getElementById("assetTypeChart"), {
   },
   options: { responsive: true, plugins: { legend: { display: false } } }
 });
+</script>
+
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+})();
 </script>
 {% endblock %}

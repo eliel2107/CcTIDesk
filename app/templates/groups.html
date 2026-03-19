@@ -4,7 +4,7 @@
   <div class="detail-head">
     <div>
       <div class="eyebrow">Admin</div>
-      <h1>Grupos de operadores</h1>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">Grupos de operadores</h1>
       <div class="muted">Organize operadores em times para atribuição automática de chamados e controle por categoria.</div>
     </div>
   </div>
@@ -135,7 +135,7 @@
 {% endfor %}
 
 <section class="card">
-  <h2>Novo grupo</h2>
+  <h2 style="font-family:'IBM Plex Mono',monospace;font-size:1rem;letter-spacing:-.01em;">Novo grupo</h2>
   <form method="post" action="{{ url_for('routes.create_group_route') }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid">
@@ -191,6 +191,14 @@
     <div class="actions"><button class="btn" type="submit">Criar grupo</button></div>
   </form>
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+})();
+</script>
 {% endblock %}
 
 {% block scripts %}

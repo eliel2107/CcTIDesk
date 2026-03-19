@@ -4,8 +4,8 @@
 <section class="card">
   <div class="detail-head">
     <div>
-      <div class="eyebrow">Referência técnica</div>
-      <h1>API REST</h1>
+      <div class="eyebrow">REFERÊNCIA TÉCNICA</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;">API REST</h1>
       <div class="muted">Base URL: <code>/api</code> &nbsp;•&nbsp; Formato: <code>application/json</code> &nbsp;•&nbsp; Rate limit: veja cada endpoint</div>
     </div>
     <div>
@@ -334,6 +334,18 @@ Content-Type: application/json
 </section>
 
 <script>
+(function(){
+  // Animate cards staggered
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+  // IBM Plex Mono for all endpoint paths and code blocks
+  document.querySelectorAll('.api-path, pre code, code, .api-index-item').forEach(function(el){
+    el.style.fontFamily="'IBM Plex Mono',monospace";
+  });
+})();
+
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
 async function tryApi(method, url, body, resultId) {

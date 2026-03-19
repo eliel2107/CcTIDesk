@@ -3,8 +3,8 @@
 <section class="card">
   <div class="detail-head">
     <div>
-      <div class="eyebrow">Patrimônio</div>
-      <h1>Dashboard de NFs</h1>
+      <div class="eyebrow">PATRIMÔNIO · NF</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;">Dashboard de NFs</h1>
       <div class="muted">Visão consolidada das entradas por NF, com drill-down por mês e localização.</div>
     </div>
     <div class="actions">
@@ -103,7 +103,7 @@
             <td>{{ row.numero_oc or '—' }}</td>
             <td>{{ row.fornecedor or '—' }}</td>
             <td>{{ row.base_destino or 'Sem localização' }}</td>
-            <td style="font-family:monospace;">{{ row.criado_em[2:16] }}</td>
+            <td style="font-family:'IBM Plex Mono',monospace;">{{ row.criado_em[2:16] }}</td>
             <td><span class="pill">{{ row.status }}</span></td>
             <td>{{ row.total_itens or 0 }}</td>
             <td>{{ row.total_unidades or 0 }}</td>
@@ -220,12 +220,26 @@ async function loadMonthDetails(month, monthLabel) {
       <td>${row.numero_oc}</td>
       <td>${row.fornecedor}</td>
       <td>${row.base_destino}</td>
-      <td style="font-family:monospace;">${row.criado_em.slice(2, 16)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;">${row.criado_em.slice(2, 16)}</td>
       <td><span class="pill">${row.status}</span></td>
       <td>${row.total_itens}</td>
       <td>${row.total_unidades}</td>
     </tr>
   `).join('');
 }
+</script>
+<script>
+(function(){
+  document.querySelectorAll('.card,.kpi').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+  document.querySelectorAll('td').forEach(function(td){
+    var txt = td.textContent.trim();
+    if(/^\d{2}[-\/]\d{2}[-\/]\d{2}/.test(txt) || /^\d{2}:\d{2}/.test(txt)){
+      td.style.fontFamily="'IBM Plex Mono',monospace";
+    }
+  });
+})();
 </script>
 {% endblock %}

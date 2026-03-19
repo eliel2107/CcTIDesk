@@ -2,8 +2,11 @@
 {% block content %}
 <section class="card">
   <div class="detail-head">
-    <div><div class="eyebrow">Admin</div><h1>Webhooks</h1>
-    <div class="muted">Receba notificações HTTP quando eventos ocorrerem no sistema.</div></div>
+    <div>
+      <div class="eyebrow">ADMIN · INTEGRAÇÕES</div>
+      <h1>Webhooks</h1>
+      <div class="muted">Receba notificações HTTP quando eventos ocorrerem no sistema.</div>
+    </div>
   </div>
 </section>
 
@@ -48,4 +51,12 @@
     <div class="actions"><button class="btn" type="submit">Criar webhook</button></div>
   </form>
 </section>
+<script>
+(function(){
+  document.querySelectorAll('.card, .kb-card, .kanban-col, .report-section').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.06)+'s';
+  });
+})();
+</script>
 {% endblock %}
