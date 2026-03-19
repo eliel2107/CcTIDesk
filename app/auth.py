@@ -31,9 +31,8 @@ def login():
         return redirect(url_for("routes.dashboard"))
     return render_template("login.html")
 
-@bp.post("/logout")
+@bp.route("/logout", methods=["GET", "POST"])
 def logout():
-    # POST evita que links externos forcem logout via GET (CSRF de logout forçado).
     session.clear()
     flash("Você saiu do sistema.", "success")
     return redirect(url_for("auth.login"))
