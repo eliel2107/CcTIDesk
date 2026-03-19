@@ -41,8 +41,11 @@ def _log_asset_history(asset_id: Optional[int], evento: str, detalhe: str = ""):
 # ── Numeração ────────────────────────────────────────────────────────────
 
 def _next_numero(db, classificacao: str) -> str:
+    # Lê o maior número existente sem BEGIN IMMEDIATE explícito.
+    # O commit é responsabilidade do chamador (create_ticket), que já envolve
+    # o INSERT completo em uma transação. Evita transação aninhada que pode
+    # causar bloqueio em SQLite com WAL mode.
     prefix = "REQ" if classificacao == "REQUISICAO" else "INC"
-    db.execute("BEGIN IMMEDIATE")
     row = db.execute(
         """SELECT COALESCE(
                MAX(CAST(SUBSTR(numero_chamado, ?) AS INTEGER)), 0
@@ -248,8 +251,12 @@ def create_ticket(data: Dict[str, Any]) -> int:
         cat = db_pre.execute("SELECT requer_aprovacao, valor_aprovacao_limite FROM categories WHERE id=?", (categoria_id,)).fetchone()
         if cat and cat["requer_aprovacao"]:
             valor = _parse_float(data.get("valor_estimado"))
-            limite = cat["valor_aprovacao_limite"]
-            if not limite or (valor and valor >= limite):
+            limite = _parse_float(cat["valor_aprovacao_limite"])
+            # Requer aprovação se:
+            # - Não há limite configurado (categoria sempre exige aprovação), OU
+            # - Não há valor estimado informado (não dá para validar se está abaixo do limite), OU
+            # - Valor estimado atinge/supera o limite.
+            if not limite or valor is None or valor >= limite:
                 status = "AGUARDANDO_APROVACAO"
 
     payload = dict(

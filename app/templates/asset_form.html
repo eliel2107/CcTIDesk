@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="card">
-  <h1>{% if asset %}Editar ativo{% else %}Novo ativo{% endif %}</h1>
+  <div class="detail-head" style="margin-bottom:1.5rem;">
+    <div>
+      <div class="eyebrow" style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.35rem;">PATRIMÔNIO / {% if asset %}EDITAR{% else %}NOVO{% endif %}</div>
+      <h1 style="font-family:'IBM Plex Mono',monospace;letter-spacing:-.02em;">{% if asset %}Editar ativo{% else %}Novo ativo{% endif %}</h1>
+    </div>
+  </div>
   <form method="post" action="{% if asset %}{{ url_for('assets_admin.edit_asset_route', asset_id=asset.id) }}{% else %}{{ url_for('assets_admin.create_asset_route') }}{% endif %}" class="form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid">
       <label>Tag do ativo
-        <input name="tag" required value="{{ asset.tag if asset else '' }}" placeholder="Ex: NB-001">
+        <input name="tag" value="{{ asset.tag if asset else '' }}" placeholder="Auto-gerada (ex: IT-0001)" style="font-family:'IBM Plex Mono',monospace;">
+        {% if not asset %}<small style="color:var(--muted,#6b7280);font-size:.75rem;">Deixe em branco para gerar automaticamente.</small>{% endif %}
       </label>
       <label>Tipo
         <select name="tipo" required>
@@ -17,7 +23,7 @@
         <input name="modelo" required value="{{ asset.modelo if asset else '' }}" placeholder="Ex: Dell Latitude 5420">
       </label>
       <label>Serial
-        <input name="serial_number" value="{{ asset.serial_number if asset else '' }}" placeholder="Ex: SN123456">
+        <input name="serial_number" value="{{ asset.serial_number if asset else '' }}" placeholder="Ex: SN123456" style="font-family:'IBM Plex Mono',monospace;">
       </label>
       <label>Base / Local
         <input name="local_base" value="{{ asset.local_base if asset else '' }}" placeholder="Ex: Manaus / Camaçari">
@@ -40,4 +46,13 @@
     </div>
   </form>
 </section>
+
+<script>
+(function(){
+  document.querySelectorAll('.card').forEach(function(c,i){
+    c.style.animation='fadeUp .4s ease both';
+    c.style.animationDelay=(i*0.07)+'s';
+  });
+})();
+</script>
 {% endblock %}

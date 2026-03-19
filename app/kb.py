@@ -73,8 +73,9 @@ def kb_article(article_id: int):
     if not art["publico"] and g.user["role"] == "solicitante":
         flash("Artigo não disponível.", "error")
         return redirect(url_for("kb.kb_index"))
-    get_db().execute("UPDATE kb_articles SET visualizacoes=visualizacoes+1 WHERE id=?", (article_id,))
-    get_db().commit()
+    db = get_db()
+    db.execute("UPDATE kb_articles SET visualizacoes=visualizacoes+1 WHERE id=?", (article_id,))
+    db.commit()
     related = list_articles(q=art["titulo"][:30], limit=4)
     related = [r for r in related if r["id"] != article_id][:3]
     return render_template("kb_article.html", art=art, related=related)
@@ -162,8 +163,9 @@ def kb_update(article_id: int):
 @login_required
 @role_required("admin")
 def kb_delete(article_id: int):
-    get_db().execute("DELETE FROM kb_articles WHERE id=?", (article_id,))
-    get_db().commit()
+    db = get_db()
+    db.execute("DELETE FROM kb_articles WHERE id=?", (article_id,))
+    db.commit()
     flash("Artigo removido.", "success")
     return redirect(url_for("kb.kb_index"))
 

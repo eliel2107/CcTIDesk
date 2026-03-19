@@ -163,12 +163,13 @@ def create_ticket_route():
 @login_required
 def ticket_detail(ticket_id: int):
     t = get_ticket(ticket_id)
-    if g.user and g.user["role"] == "solicitante" and t and t["requester_user_id"] != g.user["id"]:
-        flash("Você não tem permissão para acessar este chamado.", "error")
-        return redirect(url_for("routes.my_tickets"))
     if not t:
         flash("Chamado não encontrado.", "error")
         return redirect(url_for("routes.index"))
+    # Verifica acesso: solicitantes só podem ver seus próprios chamados.
+    if g.user["role"] == "solicitante" and t["requester_user_id"] != g.user["id"]:
+        flash("Você não tem permissão para acessar este chamado.", "error")
+        return redirect(url_for("routes.my_tickets"))
     logs = get_logs(ticket_id)
     attachments = list_attachments(ticket_id)
     steps = list_steps(ticket_id)

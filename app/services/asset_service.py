@@ -67,6 +67,19 @@ def _assert_serial_unique(serial_number: str, current_asset_id: int = None):
     if row and (current_asset_id is None or row["id"] != current_asset_id):
         raise ValueError(f"Número de série já cadastrado em outro ativo ({row['tag']}).")
 
+def _next_asset_tag() -> str:
+    """Gera a próxima tag automática no formato IT-NNNN.
+    Filtra apenas tags com sufixo puramente numérico via GLOB.
+    """
+    db = get_db()
+    row = db.execute(
+        "SELECT COALESCE(MAX(CAST(SUBSTR(tag, 4) AS INTEGER)), 0) as max_seq "
+        "FROM assets WHERE tag GLOB 'IT-[0-9]*'"
+    ).fetchone()
+    seq = (row["max_seq"] or 0) + 1
+    return f"IT-{seq:04d}"
+
+
 def create_asset(data):
     tag = clean(data.get("tag"))
     tipo = clean(data.get("tipo")).upper()
@@ -77,8 +90,9 @@ def create_asset(data):
     status = clean(data.get("status")).upper()
     observacoes = clean(data.get("observacoes"))
 
+    # Tag é opcional: gerada automaticamente se não informada.
     if not tag:
-        raise ValueError("Tag do ativo é obrigatória.")
+        tag = _next_asset_tag()
     if tipo not in ASSET_TYPES:
         raise ValueError("Tipo de ativo inválido.")
     if not modelo:

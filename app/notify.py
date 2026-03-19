@@ -1,7 +1,10 @@
+import logging
 import smtplib
 import threading
 from email.message import EmailMessage
 from typing import List
+
+_logger = logging.getLogger(__name__)
 
 
 def send_email(host: str, port: int, user: str, password: str,
@@ -31,7 +34,8 @@ def _fire(host, port, user, password, mail_from, to, subject, body):
     try:
         send_email(host, port, user, password, mail_from, to, subject, body)
     except Exception:
-        pass
+        # Registra falha para facilitar diagnóstico sem interromper a aplicação.
+        _logger.exception("Falha ao enviar e-mail para %s (assunto: %s)", to, subject)
 
 
 def notify_async(app_config, to: List[str], subject: str, body: str):

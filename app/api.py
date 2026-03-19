@@ -1,17 +1,19 @@
 from flask import Blueprint, request, render_template
 from app.models import update_status, get_ticket, list_tickets
 from app.extensions import limiter, csrf
+from app.auth.decorators import login_required
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
-# A API usa HMAC/token ou é consumida pelo JS interno — isenta de CSRF de formulário.
-# O rate limiting protege contra abuso.
+# A API usa sessão Flask — protegida por @login_required.
+# Isenta de CSRF de formulário (usa JSON), mas requer autenticação.
 
 @bp.get("/health")
 def health():
     return {"ok": True, "service": "chamados"}
 
 @bp.get("/tickets")
+@login_required
 @limiter.limit("200 per hour")
 def api_list():
     filters = {k: request.args.get(k, "") for k in ["status","tipo","prioridade","responsavel","q"]}
@@ -19,11 +21,13 @@ def api_list():
     return {"items": [dict(r) for r in rows], "count": len(rows)}
 
 @bp.get("/tickets/<int:ticket_id>")
+@login_required
 def api_get(ticket_id: int):
     row = get_ticket(ticket_id)
     return ({"error":"Chamado não encontrado"},404) if not row else dict(row)
 
 @bp.post("/tickets/<int:ticket_id>/status")
+@login_required
 @limiter.limit("120 per hour")
 def api_status(ticket_id: int):
     payload = request.get_json(silent=True) or {}
@@ -34,6 +38,7 @@ def api_status(ticket_id: int):
         return {"error": str(e)}, 400
 
 @bp.get("/assets")
+@login_required
 def api_assets():
     from app.services.asset_service import list_assets
     filters = {k: request.args.get(k, "") for k in ["q","status","tipo"]}
@@ -41,13 +46,14 @@ def api_assets():
     return {"items": [dict(r) for r in rows], "count": len(rows)}
 
 @bp.get("/assets/<int:asset_id>")
+@login_required
 def api_asset_detail(asset_id: int):
     from app.services.asset_service import get_asset
     row = get_asset(asset_id)
     return ({"error":"Ativo não encontrado"},404) if not row else dict(row)
 
 @bp.get("/docs")
-
+@login_required
 def docs():
     routes = [
         {"method":"GET","path":"/api/health","description":"Verifica se a API está ativa"},

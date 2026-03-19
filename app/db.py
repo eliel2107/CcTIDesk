@@ -564,8 +564,11 @@ def migrate_db():
     for idx_sql in _INDEXES:
         try:
             db.execute(idx_sql)
-        except Exception:
-            pass  # Tabela pode não existir ainda
+        except Exception as e:
+            # CREATE INDEX IF NOT EXISTS não falha normalmente.
+            # Registra para diagnóstico em caso de corrupção ou sintaxe inválida.
+            import logging
+            logging.getLogger(__name__).warning("Falha ao criar índice: %s — %s", idx_sql[:60], e)
 
     db.commit()
 

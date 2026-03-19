@@ -96,6 +96,25 @@ def api_ai_resolution_draft(ticket_id: int):
         return jsonify({'enabled': True, 'error': f'Falha ao consultar IA: {e}'}), 500
 
 
+@bp.post("/api/ai/tickets/<int:ticket_id>/operator-assist")
+@login_required
+@role_required('admin', 'operador')
+def api_operator_assist(ticket_id: int):
+    """Time de 3 agentes Claude: diagnóstico + checklist + rascunho de resposta."""
+    t = get_ticket(ticket_id)
+    if not t:
+        return jsonify({'error': 'Chamado não encontrado.'}), 404
+    if not current_app.config.get('ANTHROPIC_API_KEY') and not current_app.config.get('AI_API_KEY'):
+        return jsonify({'enabled': False, 'error': 'Nenhuma chave de IA configurada (AI_API_KEY ou ANTHROPIC_API_KEY).'}), 503
+    try:
+        from app.agents.operator_team import run_operator_assist
+        result = run_operator_assist(dict(t))
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.exception('Falha no time de agentes')
+        return jsonify({'enabled': True, 'error': f'Falha no time de agentes: {e}'}), 500
+
+
 # ── TMA ──────────────────────────────────────────────────────────────────
 
 @bp.get("/api/tma")

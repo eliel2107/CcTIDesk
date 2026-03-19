@@ -46,10 +46,14 @@ class Config:
         self.AI_ASSIST_ENABLED = os.getenv("AI_ASSIST_ENABLED", "false").lower() == "true"
         self.AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
         self.AI_API_KEY = os.getenv("AI_API_KEY", "")
-        self.AI_MODEL = os.getenv("AI_MODEL", "gemini-1.5-flash")
+        self.AI_MODEL = os.getenv("AI_MODEL", "gemini-2.5-flash")
         self.AI_BASE_URL = os.getenv("AI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta")
         self.AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "30") or "30")
         self.AI_MAX_CONTEXT_CHARS = int(os.getenv("AI_MAX_CONTEXT_CHARS", "6000") or "6000")
+
+        # ── Time de Agentes Claude (operator-assist) ────────────────────────────
+        self.ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+        self.ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
 
         # ── Fila / assunção com timeout ───────────────────────────────────────
         self.ASSIGNMENT_AUTO_FALLBACK_ENABLED = os.getenv("ASSIGNMENT_AUTO_FALLBACK_ENABLED", "true").lower() == "true"

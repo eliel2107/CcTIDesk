@@ -6,6 +6,7 @@ import secrets
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from .db import get_db
+from .extensions import limiter
 from .models import (
     get_ticket, get_logs, get_comments, list_attachments,
     confirmar_conclusao, rejeitar_conclusao,
@@ -57,6 +58,7 @@ def portal_view(token: str):
 
 
 @bp.post("/<token>/confirmar")
+@limiter.limit("10 per minute")
 def portal_confirmar(token: str):
     tok, ticket = _resolve_token(token)
     if not tok or not ticket:
@@ -70,6 +72,7 @@ def portal_confirmar(token: str):
 
 
 @bp.post("/<token>/rejeitar")
+@limiter.limit("10 per minute")
 def portal_rejeitar(token: str):
     tok, ticket = _resolve_token(token)
     if not tok or not ticket:
@@ -84,6 +87,7 @@ def portal_rejeitar(token: str):
 
 
 @bp.post("/<token>/comentar")
+@limiter.limit("20 per minute")
 def portal_comentar(token: str):
     tok, ticket = _resolve_token(token)
     if not tok or not ticket:
@@ -93,12 +97,13 @@ def portal_comentar(token: str):
         flash("Comentário não pode estar vazio.", "error")
         return redirect(url_for("portal.portal_view", token=token))
     nome = tok["email"] or "Solicitante externo"
-    # user_id=0 para externos
-    get_db().execute(
+    # user_id=0 para externos; usa variável local para garantir mesma conexão.
+    db = get_db()
+    db.execute(
         "INSERT INTO ticket_comments (ticket_id, user_id, user_nome, conteudo, interno, criado_em) VALUES (?,0,?,?,0,?)",
         (ticket["id"], nome, conteudo, _now())
     )
-    get_db().commit()
+    db.commit()
     from .models import log_event
     log_event(ticket["id"], "COMENTARIO_EXTERNO", f"{nome}: {conteudo[:80]}")
     flash("Mensagem enviada.", "success")
@@ -106,6 +111,7 @@ def portal_comentar(token: str):
 
 
 @bp.post("/<token>/reenviar")
+@limiter.limit("10 per minute")
 def portal_reenviar(token: str):
     tok, ticket = _resolve_token(token)
     if not tok or not ticket:

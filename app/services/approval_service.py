@@ -1,9 +1,12 @@
 """Serviço de Aprovação de chamados."""
 
+import logging
 from typing import Optional
 from app.db import get_db
 from app.helpers import _now, _parse_float
 from app.services.ticket_service import log_event
+
+_logger = logging.getLogger(__name__)
 
 
 def solicitar_aprovacao(ticket_id: int, solicitante_nome: str = ""):
@@ -56,7 +59,11 @@ def reprovar_ticket(ticket_id: int, aprovador_nome: str, motivo: str = ""):
         from app.services.stock_service import reverter_saidas_chamado
         reverter_saidas_chamado(ticket_id, usuario=aprovador_nome)
     except Exception:
-        pass
+        # Registra falha de reversão para auditoria — o ticket já foi cancelado.
+        _logger.exception(
+            "Falha ao reverter estoque do ticket %s após reprovação por %s",
+            ticket_id, aprovador_nome
+        )
 
 
 def precisa_aprovacao(ticket_id: int) -> bool:

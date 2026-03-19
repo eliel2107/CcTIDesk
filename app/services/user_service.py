@@ -1,6 +1,9 @@
+import re
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 from app.db import get_db
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 ROLES = ["admin", "operador", "solicitante", "viewer"]
 
@@ -28,6 +31,8 @@ def create_user(nome: str, email: str, password: str, role: str = "operador", ac
         raise ValueError("Nome é obrigatório.")
     if not email:
         raise ValueError("E-mail é obrigatório.")
+    if not _EMAIL_RE.match(email):
+        raise ValueError("Formato de e-mail inválido.")
     if len(password) < 6:
         raise ValueError("A senha deve ter pelo menos 6 caracteres.")
     if role not in ROLES:
@@ -50,6 +55,8 @@ def update_user(user_id: int, nome: str, email: str, role: str, active: bool):
         raise ValueError("Nome é obrigatório.")
     if not email:
         raise ValueError("E-mail é obrigatório.")
+    if not _EMAIL_RE.match(email):
+        raise ValueError("Formato de e-mail inválido.")
     if role not in ROLES:
         raise ValueError(f"Perfil inválido. Use: {', '.join(ROLES)}")
 
