@@ -47,7 +47,7 @@
   </form>
 </section>
 
-<section class="card">
+<section class="card queue-section">
   <div class="table-wrap">
     <table>
       <thead>
@@ -59,34 +59,34 @@
       </thead>
       <tbody>
         {% if tickets|length == 0 %}
-          <tr><td colspan="10" class="muted">Nenhum chamado na fila.</td></tr>
+          <tr><td colspan="9" class="muted">Nenhum chamado na fila.</td></tr>
         {% endif %}
         {% for t in tickets %}
           <tr class="{% if not t.assigned_user_id %}queue-row-unassigned{% endif %}">
-            <td><a class="queue-ticket-id" href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">#{{ t.id }}</a></td>
-            <td>
+            <td data-label="ID"><a class="queue-ticket-id" href="{{ url_for('routes.ticket_detail', ticket_id=t.id) }}">#{{ t.id }}</a></td>
+            <td data-label="Título">
               {{ t.titulo }}
               {% if not t.assigned_user_id %}<span class="badge-unassigned">Novo</span>{% endif %}
             </td>
-            <td>
+            <td data-label="Categoria">
               {% if t.categoria_nome %}
                 <span class="pill" style="background:{{ t.categoria_cor }};color:#fff;">{{ t.categoria_nome }}</span>
               {% else %}
                 <span class="muted">—</span>
               {% endif %}
             </td>
-            <td>{{ t.requester_name or t.solicitante or "–" }}</td>
-            <td><span class="pill pill-priority-{{ t.prioridade|lower }}">{{ t.prioridade }}</span></td>
-            <td><span class="pill">{{ t.status }}</span></td>
-            <td>
+            <td data-label="Solicitante">{{ t.requester_name or t.solicitante or "–" }}</td>
+            <td data-label="Prioridade"><span class="pill pill-priority-{{ t.prioridade|lower }}">{{ t.prioridade }}</span></td>
+            <td data-label="Status"><span class="pill">{{ t.status }}</span></td>
+            <td data-label="Responsável">
               {% if not t.assigned_user_id %}
                 <span class="unassigned-label">— Sem responsável —</span>
               {% else %}
                 {{ t.assigned_name or t.responsavel }}
               {% endif %}
             </td>
-            <td>{{ t.criado_em }}</td>
-            <td>
+            <td data-label="Criado em">{{ t.criado_em }}</td>
+            <td data-label="Ação">
               {% if not t.assigned_user_id %}
                 <form method="post" action="{{ url_for('routes.take_ticket', ticket_id=t.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

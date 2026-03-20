@@ -1,0 +1,354 @@
+/* ══════════════════════════════════════════════════════════════
+   CcTI Desk — Responsive CSS
+   Breakpoints: 1024px | 768px | 640px | 480px | 375px
+   Carregado após styles.css — pode sobrescrever com !important
+══════════════════════════════════════════════════════════════ */
+
+/* ── Hamburger Button (oculto no desktop) ─────────────────── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--b1);
+  border-radius: var(--rs);
+  cursor: pointer;
+  flex-shrink: 0;
+  order: -1;
+  transition: border-color .15s, background .15s;
+}
+.hamburger:hover {
+  border-color: var(--b2);
+  background: rgba(255,255,255,.05);
+}
+.ham-line {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--fg2);
+  border-radius: 2px;
+  transition: transform .22s cubic-bezier(.4,0,.2,1),
+              opacity .22s, background .15s;
+}
+.hamburger:hover .ham-line { background: var(--fg); }
+
+/* Animação X quando sidebar está aberta */
+body.sidebar-open .hamburger .ham-line:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+body.sidebar-open .hamburger .ham-line:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+body.sidebar-open .hamburger .ham-line:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ── Sidebar Overlay (fundo escuro quando drawer aberto) ───── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 190;
+}
+
+/* ── Utilitários de visibilidade ──────────────────────────── */
+.hide-mobile  { /* oculto em <= 640px via media query abaixo */ }
+.hide-tablet  { /* oculto em <= 480px via media query abaixo */ }
+
+/* ══ 1024px — Tablet landscape / small desktop ═══════════════
+   Converte sidebar em drawer — sobrescreve o position:static
+   definido no styles.css linhas 299-304
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  /* Sidebar volta para position:fixed como drawer */
+  .sidebar {
+    position: fixed !important;
+    left: 0; top: 0; bottom: 0;
+    width: var(--sw) !important;
+    height: 100dvh !important;
+    border-right: 1px solid var(--b1) !important;
+    border-bottom: none !important;
+    transform: translateX(calc(-1 * var(--sw)));
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    z-index: 200;
+    will-change: transform;
+  }
+
+  /* Restaura glow que o styles.css remove em 1024px */
+  .sidebar::before { display: block !important; }
+
+  /* Remove limitação de altura do nav */
+  .sidebar-nav {
+    max-height: none !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* App shell ocupa largura total — sidebar é overlay */
+  .app-shell.with-sidebar { margin-left: 0 !important; }
+
+  /* Mostra hamburger */
+  .hamburger { display: flex; }
+
+  /* Sidebar abre ao adicionar .sidebar-open no <body> */
+  body.sidebar-open .sidebar { transform: translateX(0); }
+  body.sidebar-open .sidebar-overlay { display: block; }
+
+  /* Topbar: padding mais compacto */
+  .topbar-compact { padding: 0 16px; gap: 10px; }
+}
+
+/* ══ 768px — Mobile / small tablet ══════════════════════════ */
+@media (max-width: 768px) {
+  /* Conteúdo: padding menor */
+  .page-content { padding: 14px 12px 32px; }
+  .footer { padding: 0 12px 20px; }
+
+  /* Dropdown de notificações: não transborda a viewport */
+  .notif-dropdown {
+    width: min(340px, calc(100vw - 24px)) !important;
+    right: -8px !important;
+  }
+
+  /* Oculta dica de teclado Ctrl+K para economizar espaço */
+  .search-trigger-hint { display: none; }
+
+  /* Layout premium: coluna única — ações críticas primeiro */
+  .layout-premium { grid-template-columns: 1fr !important; }
+  .side-pane { order: -1; }
+
+  /* KPI grid: 2 colunas */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Summary grid: 2 colunas */
+  .summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Kanban: scroll horizontal com snap */
+  .kanban-board {
+    grid-template-columns: repeat(7, 240px) !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 12px;
+  }
+  .kanban-col { scroll-snap-align: start; }
+
+  /* Indica que há scroll horizontal no kanban */
+  .kanban-board::after {
+    content: '← deslize para ver mais →';
+    display: block;
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: .72rem;
+    color: var(--muted);
+    padding: 8px 0 4px;
+    pointer-events: none;
+  }
+}
+
+/* ══ 640px — Cards para tabelas, ajustes de formulário ═══════ */
+@media (max-width: 640px) {
+
+  /* ── Queue: tabela → cards ── */
+  .queue-section .table-wrap table,
+  .queue-section .table-wrap thead,
+  .queue-section .table-wrap tbody,
+  .queue-section .table-wrap th,
+  .queue-section .table-wrap td,
+  .queue-section .table-wrap tr { display: block; }
+
+  /* Cabeçalho visualmente oculto mas acessível */
+  .queue-section .table-wrap thead {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+  }
+
+  /* Cada linha vira um card */
+  .queue-section .table-wrap tr {
+    border: 1px solid var(--b1);
+    border-radius: var(--r);
+    margin-bottom: 10px;
+    background: var(--s2);
+    padding: 4px 0;
+    transition: box-shadow .15s;
+  }
+  .queue-section .table-wrap tr:hover {
+    background: var(--s2);
+    box-shadow: 0 2px 12px rgba(59,127,255,.1);
+  }
+
+  /* Linhas sem responsável */
+  .queue-section .table-wrap tr.queue-row-unassigned {
+    border-left: 3px solid var(--accent);
+  }
+
+  /* Células com label */
+  .queue-section .table-wrap td {
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    display: grid;
+    grid-template-columns: 95px 1fr;
+    align-items: center;
+    gap: 8px;
+    white-space: normal;
+    padding: 9px 14px;
+    min-height: 36px;
+    font-size: .87rem;
+  }
+  .queue-section .table-wrap td:last-child { border-bottom: none; }
+
+  /* Label de cada célula via data-label */
+  .queue-section .table-wrap td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* ID — título do card */
+  .queue-section .table-wrap td:first-child {
+    grid-template-columns: 1fr;
+    font-size: 15px;
+    font-weight: 800;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--b1) !important;
+  }
+  .queue-section .table-wrap td:first-child::before { display: none; }
+
+  /* Ação — rodapé do card */
+  .queue-section .table-wrap td:last-child {
+    grid-template-columns: 1fr;
+    padding-top: 10px;
+    border-top: 1px solid var(--b1);
+  }
+  .queue-section .table-wrap td:last-child::before { display: none; }
+  .queue-section .table-wrap td:last-child .btn { width: 100%; }
+
+  /* Estado vazio (colspan) */
+  .queue-section .table-wrap td[colspan] {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .queue-section .table-wrap td[colspan]::before { display: none; }
+
+  /* ── Ocultar colunas secundárias ── */
+  .hide-mobile { display: none !important; }
+
+  /* ── Logs: sobrescreve white-space:nowrap injetado por JS ── */
+  table tbody tr td:first-child {
+    white-space: normal !important;
+    word-break: break-word;
+  }
+
+  /* ── Formulários: força coluna única ── */
+  .form .grid,
+  .filters .grid { grid-template-columns: 1fr !important; }
+  .span-2 { grid-column: span 1 !important; }
+
+  /* ── Botões de ação: wrap */
+  .actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .actions .btn {
+    flex: 1 1 140px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* ── Detail grid: coluna única ── */
+  .detail-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Two-col: coluna única ── */
+  .two-col { grid-template-columns: 1fr !important; }
+}
+
+/* ══ 480px — Smartphone médio ════════════════════════════════ */
+@media (max-width: 480px) {
+  /* KPI grid: coluna única */
+  .kpi-grid { grid-template-columns: 1fr !important; }
+
+  /* Chart grid: coluna única */
+  .chart-grid { grid-template-columns: 1fr !important; }
+
+  /* Quick grid: 2 colunas */
+  .quick-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Premium alerts: coluna única */
+  .premium-alerts { grid-template-columns: 1fr !important; }
+
+  /* Topbar: título menor, subtítulo oculto */
+  .topbar-title { font-size: .9rem; }
+  .topbar-subtitle { display: none; }
+
+  /* Kanban: colunas mais estreitas */
+  .kanban-board { grid-template-columns: repeat(7, 200px) !important; }
+
+  /* Colunas apenas para tablet */
+  .hide-tablet { display: none !important; }
+
+  /* Hero card: coluna única */
+  .hero-card { grid-template-columns: 1fr !important; }
+}
+
+/* ══ 375px — iPhone SE / Android compacto ════════════════════ */
+@media (max-width: 375px) {
+  .page-content { padding: 10px 8px 24px; }
+  .topbar-compact { padding: 0 10px; gap: 6px; }
+
+  /* Summary grid: coluna única */
+  .summary-grid { grid-template-columns: 1fr !important; }
+
+  /* Notif dropdown: quase full width */
+  .notif-dropdown {
+    width: calc(100vw - 16px) !important;
+    right: -10px !important;
+  }
+
+  /* Kanban ainda mais estreito */
+  .kanban-board { grid-template-columns: repeat(7, 180px) !important; }
+
+  /* Fontes ligeiramente menores */
+  .topbar-title { font-size: .85rem; }
+}
+
+/* ── Tap targets mínimos (WCAG) — dispositivos touch ──────── */
+@media (pointer: coarse) {
+  .btn,
+  a.btn,
+  .mini,
+  button.mini {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-nav a { min-height: 44px; }
+  .notif-btn { min-width: 44px; min-height: 44px; }
+  .hamburger { min-width: 44px; min-height: 44px; }
+}
+
+/* ── Print: oculta navegação ──────────────────────────────── */
+@media print {
+  .sidebar,
+  .topbar-compact,
+  .hamburger,
+  .sidebar-overlay,
+  .footer { display: none !important; }
+
+  .app-shell.with-sidebar { margin-left: 0 !important; }
+  .page-content { padding: 0 !important; }
+}
